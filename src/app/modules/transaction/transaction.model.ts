@@ -15,6 +15,7 @@ const transactionSchema = new Schema<ITransaction>(
     commission: { type: Number },
     currentBalance: { type: Number, required: true },
     initiatedBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    purpose: {type: String}
   },
   {
     timestamps: true,
@@ -22,7 +23,7 @@ const transactionSchema = new Schema<ITransaction>(
   }
 );
 
-export const TransactionModel = model<ITransaction>(
+export const Transaction = model<ITransaction>(
   "Transaction",
   transactionSchema
 );

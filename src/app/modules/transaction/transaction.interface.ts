@@ -16,8 +16,8 @@ export enum TransactionStatus {
 
 export interface ITransaction {
   _id?: Types.ObjectId;
-  fromWalletId?: Types.ObjectId;
-  toWalletId?: Types.ObjectId;
+  fromWalletId: Types.ObjectId;
+  toWalletId: Types.ObjectId;
   type: TransactionType;
   status: TransactionStatus; 
   amount: number;
@@ -25,4 +25,5 @@ export interface ITransaction {
   commission?: number;
   currentBalance: number;
   initiatedBy: Types.ObjectId;
+  purpose?: string
 }
