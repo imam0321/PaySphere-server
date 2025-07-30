@@ -25,6 +25,7 @@ const userSchema = new Schema<IUser>(
     },
     isVerified: { type: Boolean, default: false },
     walletId: { type: Schema.Types.ObjectId, ref: "Wallet" },
+    transactionId: [{ type: Schema.Types.ObjectId, ref: "Transaction" }],
     isApproved: { type: Boolean, default: false },
     commissionRate: { type: Number },
     auths: [authProviderSchema],

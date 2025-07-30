@@ -80,9 +80,12 @@ export const seedAdmin = async () => {
       purpose: "Initial admin funding",
     };
 
-    await Transaction.create([transactionPayload], { session });
+    const createdTransaction = await Transaction.create([transactionPayload], {
+      session,
+    });
 
     createAdmin[0].walletId = createWallet[0]._id;
+    createAdmin[0].transactionId = [createdTransaction[0]._id];
     await createAdmin[0].save();
 
     await session.commitTransaction();

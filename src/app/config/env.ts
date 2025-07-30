@@ -10,6 +10,7 @@ interface EnvConfig {
   ADMIN_PASSWORD: string;
   FRONTEND_URL: string;
   BCRYPT_SALT_ROUND: string;
+  EXPRESS_SESSION_SECRET: string;
 }
 
 const loadEnvVariables = (): EnvConfig => {
@@ -21,6 +22,7 @@ const loadEnvVariables = (): EnvConfig => {
     "ADMIN_PASSWORD",
     "FRONTEND_URL",
     "BCRYPT_SALT_ROUND",
+    "EXPRESS_SESSION_SECRET",
   ];
 
   requiredEnvVariable.forEach((key) => {
@@ -37,6 +39,7 @@ const loadEnvVariables = (): EnvConfig => {
     ADMIN_PASSWORD: process.env.ADMIN_PASSWORD as string,
     FRONTEND_URL: process.env.FRONTEND_URL as string,
     BCRYPT_SALT_ROUND: process.env.BCRYPT_SALT_ROUND as string,
+    EXPRESS_SESSION_SECRET: process.env.EXPRESS_SESSION_SECRET as string,
   };
 };
 
