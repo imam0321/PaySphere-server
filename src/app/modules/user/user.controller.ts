@@ -6,18 +6,6 @@ import httpStatus from "http-status-codes";
 import { UserService } from "./user.service";
 import { JwtPayload } from "jsonwebtoken";
 
-const createUser = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const user = await UserService.createUser(req.body);
-    sendResponse(res, {
-      statusCode: httpStatus.CREATED,
-      success: true,
-      message: `${req.body.role} created successfully`,
-      data: user,
-    });
-  }
-);
-
 const getMe = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const decodedToken = req.user as JwtPayload;
@@ -27,7 +15,7 @@ const getMe = catchAsync(
       statusCode: httpStatus.OK,
       success: true,
       message: "Your Profile Retrieved Successfully",
-      data: result.data,
+      data: result,
     });
   }
 );
@@ -43,9 +31,22 @@ const getAllUser = catchAsync(
       success: true,
       message: "All Users and Agent retrieved successfully",
       data: result.data,
-      meta: result.meta
+      meta: result.meta,
     });
   }
 );
 
-export const UserController = { createUser, getMe, getAllUser };
+const getSingleUser = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const result = await UserService.getSingleUser(req.params.phone);
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "User Retrieved Successfully",
+      data: result,
+    });
+  }
+);
+
+export const UserController = { getMe, getAllUser, getSingleUser };

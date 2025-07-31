@@ -6,6 +6,32 @@ import { AuthService } from "./auth.service";
 import httpStatus from "http-status-codes";
 import { JwtPayload } from "jsonwebtoken";
 
+const registerUser = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const result = await AuthService.register({ ...req.body, role: "user" });
+    
+    sendResponse(res, {
+      statusCode: httpStatus.CREATED,
+      success: true,
+      message: "User registered successfully",
+      data: result,
+    });
+  }
+);
+
+const registerAgent = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const result = await AuthService.register({ ...req.body, role: "agent" });
+
+    sendResponse(res, {
+      statusCode: httpStatus.CREATED,
+      success: true,
+      message: "Agent registered successfully",
+      data: result,
+    });
+  }
+);
+
 const credentialLogin = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const loginInfo = await AuthService.credentialLogin(req.body);
@@ -65,9 +91,10 @@ const logout = catchAsync(
   }
 );
 
-
 export const AuthController = {
+  registerUser,
+  registerAgent,
   credentialLogin,
   changePassword,
-  logout
+  logout,
 };

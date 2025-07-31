@@ -1,11 +1,77 @@
 import httpStatus from "http-status-codes";
 import AppError from "../../errorHelpers/AppError";
-import { IUser } from "../user/user.interface";
+import { IUser, Role } from "../user/user.interface";
 import { User } from "../user/user.model";
 import { createUserTokens } from "../../utils/userTokens";
 import bcryptjs from "bcryptjs";
 import { JwtPayload } from "jsonwebtoken";
 import { envVars } from "../../config/env";
+import { WalletService } from "../wallet/wallet.service";
+import { TransactionService } from "../transaction/transaction.service";
+import { Types } from "mongoose";
+
+const register = async (payload: Partial<IUser>) => {
+  const session = await User.startSession();
+  session.startTransaction();
+  
+  try {
+    const { email, password, role, ...rest } = payload;
+
+    const isUserExist = await User.findOne({ email });
+    if (isUserExist) {
+      throw new AppError(httpStatus.BAD_REQUEST, "User already Exist!");
+    }
+
+    const hashedPassword = await bcryptjs.hash(
+      password as string,
+      Number(envVars.BCRYPT_SALT_ROUND)
+    );
+
+    const [user] = await User.create(
+      [
+        {
+          email,
+          password: hashedPassword,
+          commissionRate: role === Role.agent ? 5 : undefined,
+          ...rest,
+        },
+      ],
+      { session }
+    );
+
+    const userWallet = await WalletService.createWallet(user._id, session);
+
+    user.walletId = userWallet._id as Types.ObjectId;
+    await user.save({ session });
+
+    if (user.role === "agent") {
+      const agentInfo = user.toObject();
+      delete agentInfo.password;
+      await session.commitTransaction();
+      session.endSession();
+      return agentInfo;
+    }
+
+    const updatedUser = await TransactionService.initialFunding(
+      userWallet,
+      50,
+      session
+    );
+
+    await session.commitTransaction();
+    session.endSession();
+    return {
+      data: updatedUser,
+    };
+  } catch (error: any) {
+    await session.abortTransaction();
+    session.endSession();
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      `User Create Error! ${error.message}`
+    );
+  }
+};
 
 const credentialLogin = async (payload: Partial<IUser>) => {
   const { email, password } = payload;
@@ -69,6 +135,7 @@ const changePassword = async (
 };
 
 export const AuthService = {
+  register,
   credentialLogin,
   changePassword,
 };

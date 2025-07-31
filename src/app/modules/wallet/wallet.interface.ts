@@ -1,4 +1,4 @@
-import { Types } from "mongoose";
+import { Document, Types } from "mongoose";
 
 export enum WalletStatus {
   active = "active",
@@ -11,3 +11,5 @@ export interface IWallet {
   currency: "BDT";
   status: WalletStatus;
 }
+
+export interface IWalletDocument extends IWallet, Document {}
