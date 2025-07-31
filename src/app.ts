@@ -1,8 +1,6 @@
 import cors from "cors";
 import express, { Application, Request, Response } from "express";
 import cookieParser from "cookie-parser";
-import passport from "passport";
-import "./app/config/passport.config";
 import { router } from "./app/routes";
 import { envVars } from "./app/config/env";
 import { globalErrorHandler } from "./app/middlewares/globalErrorHandler";
@@ -19,8 +17,6 @@ app.use(
   })
 );
 
-app.use(passport.initialize());
-app.use(passport.session());
 app.use(cookieParser());
 app.use(express.json());
 app.use(

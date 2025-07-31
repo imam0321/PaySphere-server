@@ -12,6 +12,8 @@ import {
   TransactionType,
 } from "../transaction/transaction.interface";
 import { Transaction } from "../transaction/transaction.model";
+import { QueryBuilder } from "../../utils/QueryBuilder";
+import { UserSearchableFields } from "./user.constant";
 
 const createUser = async (payload: Partial<IUser>) => {
   const session = await User.startSession();
@@ -166,7 +168,29 @@ const getMe = async (userId: string) => {
   };
 };
 
+const getAllUser = async (query: Record<string, string>) => {
+  const queryBuilder = new QueryBuilder(User.find(), query);
+
+  const users = queryBuilder
+    .search(UserSearchableFields)
+    .sort()
+    .fields()
+    .filter()
+    .paginate();
+
+  const [data, meta] = await Promise.all([
+    users.build(),
+    queryBuilder.getMeta(),
+  ]);
+
+  return {
+    data,
+    meta,
+  };
+};
+
 export const UserService = {
   createUser,
   getMe,
+  getAllUser,
 };

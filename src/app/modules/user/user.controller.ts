@@ -32,4 +32,20 @@ const getMe = catchAsync(
   }
 );
 
-export const UserController = { createUser, getMe };
+const getAllUser = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const result = await UserService.getAllUser(
+      req.query as Record<string, string>
+    );
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "All Users and Agent retrieved successfully",
+      data: result.data,
+      meta: result.meta
+    });
+  }
+);
+
+export const UserController = { createUser, getMe, getAllUser };
