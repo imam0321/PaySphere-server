@@ -5,7 +5,7 @@ const userSchema = new Schema<IUser>(
   {
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
-    role: { type: String, enum: Object.values(Role), default: Role.user },
+    role: { type: String, enum: Object.values(Role)},
     password: { type: String },
     phone: { type: String, required: true, unique: true },
     picture: { type: String },
@@ -16,6 +16,7 @@ const userSchema = new Schema<IUser>(
       default: IsActive.active,
     },
     isVerified: { type: Boolean, default: false },
+    isDeleted: {type: Boolean, default: false, },
     walletId: { type: Schema.Types.ObjectId, ref: "Wallet" },
     transactionId: [{ type: Schema.Types.ObjectId, ref: "Transaction" }],
     isApproved: { type: Boolean, default: false },

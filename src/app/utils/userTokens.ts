@@ -52,6 +52,10 @@ export const createNewAccessTokenWithRefreshToken = async (
     );
   }
 
+  if (isUserExist.isDeleted) {
+    throw new AppError(httpStatus.BAD_REQUEST, `User is deleted!`);
+  }
+
   const jwtPayload = {
     userId: isUserExist._id,
     email: isUserExist.email,

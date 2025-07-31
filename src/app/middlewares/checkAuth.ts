@@ -33,13 +33,15 @@ export const checkAuth =
       //   throw new AppError(httpStatus.BAD_REQUEST, "User not Verified");
       // }
 
-      if (
-        isUserExist.isActive === IsActive.blocked 
-      ) {
+      if (isUserExist.isActive === IsActive.blocked) {
         throw new AppError(
           httpStatus.BAD_REQUEST,
           `User ${isUserExist.isActive}!`
         );
+      }
+
+      if (isUserExist.isDeleted) {
+        throw new AppError(httpStatus.BAD_REQUEST, `User is deleted!`);
       }
 
       if (!authRoles.includes(verifiedToken.role)) {

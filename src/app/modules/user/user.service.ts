@@ -17,7 +17,7 @@ const createUser = async (payload: Partial<IUser>) => {
   const session = await User.startSession();
   try {
     session.startTransaction();
-    const { email, password, role, phone, ...rest } = payload;
+    const { email, password, role, ...rest } = payload;
 
     const isUserExist = await User.findOne({ email });
     if (isUserExist) {
