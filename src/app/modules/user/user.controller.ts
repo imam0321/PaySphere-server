@@ -1,0 +1,52 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import catchAsync from "../../utils/catchAsync";
+import { NextFunction, Request, Response } from "express";
+import { sendResponse } from "../../utils/sendResponse";
+import httpStatus from "http-status-codes";
+import { UserService } from "./user.service";
+import { JwtPayload } from "jsonwebtoken";
+
+const getMe = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const decodedToken = req.user as JwtPayload;
+    const result = await UserService.getMe(decodedToken.userId);
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Your Profile Retrieved Successfully",
+      data: result,
+    });
+  }
+);
+
+const getAllUser = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const result = await UserService.getAllUser(
+      req.query as Record<string, string>
+    );
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "All Users and Agent retrieved successfully",
+      data: result.data,
+      meta: result.meta,
+    });
+  }
+);
+
+const getSingleUser = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const result = await UserService.getSingleUser(req.params.phone);
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "User Retrieved Successfully",
+      data: result,
+    });
+  }
+);
+
+export const UserController = { getMe, getAllUser, getSingleUser };
