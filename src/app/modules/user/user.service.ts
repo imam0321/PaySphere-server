@@ -1,5 +1,5 @@
 import AppError from "../../errorHelpers/AppError";
-import { IAuthProvider, IUser } from "./user.interface";
+import { IUser, Role } from "./user.interface";
 import { User } from "./user.model";
 import httpStatus from "http-status-codes";
 import bcryptjs from "bcryptjs";
@@ -7,6 +7,7 @@ import { envVars } from "../../config/env";
 import { IWallet, WalletStatus } from "../wallet/wallet.interface";
 import { Wallet } from "../wallet/wallet.model";
 import {
+  ITransaction,
   TransactionStatus,
   TransactionType,
 } from "../transaction/transaction.interface";
@@ -14,13 +15,17 @@ import { Transaction } from "../transaction/transaction.model";
 
 const createUser = async (payload: Partial<IUser>) => {
   const session = await User.startSession();
-  session.startTransaction();
   try {
-    const { email, password, ...rest } = payload;
+    session.startTransaction();
+    const { email, password, role, phone, ...rest } = payload;
 
     const isUserExist = await User.findOne({ email });
     if (isUserExist) {
       throw new AppError(httpStatus.BAD_REQUEST, "User already Exist!");
+    }
+
+    if (role !== "user" && role !== "agent") {
+      throw new AppError(httpStatus.BAD_REQUEST, "Role must be User or Agent");
     }
 
     const hashedPassword = await bcryptjs.hash(
@@ -28,17 +33,14 @@ const createUser = async (payload: Partial<IUser>) => {
       Number(envVars.BCRYPT_SALT_ROUND)
     );
 
-    const authProvider: IAuthProvider = {
-      provider: "Credential",
-      providerId: email as string,
-    };
+    const normalizedRole = role?.toLowerCase();
 
     const user = await User.create(
       [
         {
           email,
           password: hashedPassword,
-          auths: [authProvider],
+          role: normalizedRole,
           ...rest,
         },
       ],
@@ -56,6 +58,14 @@ const createUser = async (payload: Partial<IUser>) => {
 
     user[0].walletId = userWallet[0]._id;
     await user[0].save({ session });
+
+    if (user[0].role === "agent") {
+      const agentInfo = user[0].toObject();
+      delete agentInfo.password;
+      await session.commitTransaction();
+      session.endSession();
+      return agentInfo;
+    }
 
     const admin = await User.findOne({ email: envVars.ADMIN_EMAIL });
     if (!admin) {
@@ -84,39 +94,33 @@ const createUser = async (payload: Partial<IUser>) => {
       userWallet[0].save({ session }),
     ]);
 
+    const adminTransactionPayload: ITransaction = {
+      fromWalletId: adminWallet._id,
+      toWalletId: userWallet[0]._id,
+      type: TransactionType.cash_out,
+      status: TransactionStatus.approved,
+      amount: fundingAmount,
+      commission: 0,
+      currentBalance: adminWallet.balance,
+      initiatedBy: admin._id,
+      purpose: "Initial funding to new user",
+    };
+
+    const userTransactionPayload: ITransaction = {
+      fromWalletId: adminWallet._id,
+      toWalletId: userWallet[0]._id,
+      type: TransactionType.cash_in,
+      status: TransactionStatus.approved,
+      amount: 50,
+      commission: 0,
+      currentBalance: 50,
+      initiatedBy: adminWallet.userId,
+      purpose: "Initial admin funding",
+    };
+
     const [adminTransaction, userTransaction] = await Promise.all([
-      Transaction.create(
-        [
-          {
-            fromWalletId: adminWallet._id,
-            toWalletId: userWallet[0]._id,
-            type: TransactionType.cash_out,
-            status: TransactionStatus.approved,
-            amount: fundingAmount,
-            commission: 0,
-            currentBalance: adminWallet.balance,
-            initiatedBy: admin._id,
-            purpose: "Initial funding to new user",
-          },
-        ],
-        { session }
-      ),
-      Transaction.create(
-        [
-          {
-            fromWalletId: adminWallet._id,
-            toWalletId: userWallet[0]._id,
-            type: TransactionType.cash_in,
-            status: TransactionStatus.approved,
-            amount: 50,
-            commission: 0,
-            currentBalance: 50,
-            initiatedBy: adminWallet.userId,
-            purpose: "Initial admin funding",
-          },
-        ],
-        { session }
-      ),
+      Transaction.create([adminTransactionPayload], { session }),
+      Transaction.create([userTransactionPayload], { session }),
     ]);
 
     await User.findByIdAndUpdate(
@@ -154,15 +158,15 @@ const createUser = async (payload: Partial<IUser>) => {
 };
 
 const getMe = async (userId: string) => {
-  const myInfo = await User.findById(userId).select("-password");
+  const myInfo = await User.findById(userId)
+    .select("-password")
+    .populate("walletId", "balance status");
   return {
     data: myInfo,
   };
 };
 
-
-
 export const UserService = {
   createUser,
-  getMe
+  getMe,
 };

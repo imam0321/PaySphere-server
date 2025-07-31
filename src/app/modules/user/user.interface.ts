@@ -11,11 +11,6 @@ export enum IsActive {
   blocked = "blocked",
 }
 
-export interface IAuthProvider {
-  provider: "Google" | "Credential";
-  providerId: string;
-}
-
 export interface IUser {
   _id?: Types.ObjectId;
   name: string;
@@ -31,5 +26,4 @@ export interface IUser {
   transactionId?: Types.ObjectId[]
   isApproved?: boolean;
   commissionRate?: number;
-  auths: IAuthProvider[];
 }

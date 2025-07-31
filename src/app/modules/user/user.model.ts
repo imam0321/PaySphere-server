@@ -1,13 +1,5 @@
 import { model, Schema } from "mongoose";
-import { IAuthProvider, IsActive, IUser, Role } from "./user.interface";
-
-const authProviderSchema = new Schema<IAuthProvider>(
-  {
-    provider: { type: String, required: true },
-    providerId: { type: String, required: true },
-  },
-  { versionKey: false, _id: false }
-);
+import { IsActive, IUser, Role } from "./user.interface";
 
 const userSchema = new Schema<IUser>(
   {
@@ -15,7 +7,7 @@ const userSchema = new Schema<IUser>(
     email: { type: String, required: true, unique: true },
     role: { type: String, enum: Object.values(Role), default: Role.user },
     password: { type: String },
-    phone: { type: String },
+    phone: { type: String, required: true, unique: true },
     picture: { type: String },
     address: { type: String },
     isActive: {
@@ -28,7 +20,6 @@ const userSchema = new Schema<IUser>(
     transactionId: [{ type: Schema.Types.ObjectId, ref: "Transaction" }],
     isApproved: { type: Boolean, default: false },
     commissionRate: { type: Number },
-    auths: [authProviderSchema],
   },
   {
     timestamps: true,

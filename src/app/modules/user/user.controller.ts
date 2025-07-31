@@ -12,7 +12,7 @@ const createUser = catchAsync(
     sendResponse(res, {
       statusCode: httpStatus.CREATED,
       success: true,
-      message: "User Created Successfully",
+      message: `${req.body.role} created successfully`,
       data: user,
     });
   }

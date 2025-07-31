@@ -1,7 +1,6 @@
 /* eslint-disable no-console */
 import { envVars } from "../config/env";
 import {
-  IAuthProvider,
   IsActive,
   IUser,
   Role,
@@ -20,8 +19,8 @@ import {
 
 export const seedAdmin = async () => {
   const session = await mongoose.startSession();
-  session.startTransaction();
   try {
+    session.startTransaction();
     const isAdminExist = await User.findOne({ email: envVars.ADMIN_EMAIL });
 
     if (isAdminExist) {
@@ -34,19 +33,15 @@ export const seedAdmin = async () => {
       Number(envVars.BCRYPT_SALT_ROUND)
     );
 
-    const authProvider: IAuthProvider = {
-      provider: "Credential",
-      providerId: envVars.ADMIN_EMAIL,
-    };
-
     const adminPayload: IUser = {
       name: "Admin",
       email: envVars.ADMIN_EMAIL,
       role: Role.admin,
+      phone: envVars.ADMIN_PHONE,
       password: hashPassword,
       isVerified: true,
+      isApproved: true,
       isActive: IsActive.active,
-      auths: [authProvider],
     };
 
     const createAdmin = await User.create([adminPayload], { session });

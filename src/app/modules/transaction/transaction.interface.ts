@@ -16,7 +16,7 @@ export enum TransactionStatus {
 
 export interface ITransaction {
   _id?: Types.ObjectId;
-  fromWalletId: Types.ObjectId;
+  fromWalletId?: Types.ObjectId;
   toWalletId: Types.ObjectId;
   type: TransactionType;
   status: TransactionStatus; 
