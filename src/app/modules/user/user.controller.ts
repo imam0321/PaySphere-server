@@ -21,6 +21,20 @@ const registerUser = catchAsync(
   }
 );
 
+const addMoney = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { userId } = req.user as JwtPayload;
+    const result = await UserService.addMoney(userId, req.body.amount);
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Your Profile Retrieved Successfully",
+      data: result,
+    });
+  }
+);
+
 const getMe = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const decodedToken = req.user as JwtPayload;
@@ -44,7 +58,7 @@ const getAllUser = catchAsync(
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
-      message: "All Users and Agent retrieved successfully",
+      message: "All Users retrieved successfully",
       data: result.data,
       meta: result.meta,
     });
@@ -66,6 +80,7 @@ const getSingleUser = catchAsync(
 
 export const UserController = {
   registerUser,
+  addMoney,
   getMe,
   getAllUser,
   getSingleUser,

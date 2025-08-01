@@ -40,9 +40,9 @@ const register = async (payload: Partial<IUser>, role: Role) => {
     if (role === Role.agent) {
       userPayload.feeRate = Number(envVars.AGENT_FEE_RATE) || 15;
       userPayload.commissionRate = Number(envVars.AGENT_COMMISSION_RATE) || 5;
-      userPayload.isApproved = false;
     } else if (role === Role.user) {
       userPayload.feeRate = Number(envVars.USER_FEE_RATE) || 20;
+      userPayload.isApproved = false;
     }
 
     const [user] = await User.create([userPayload], { session });

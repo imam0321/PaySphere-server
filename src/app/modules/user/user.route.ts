@@ -12,12 +12,14 @@ router.post(
   validateRequest(createUserZodSchema),
   UserController.registerUser
 );
-router.get("/", checkAuth("admin"), UserController.getAllUser);
+router.post("/add-money", checkAuth(Role.user), UserController.addMoney)
+
 router.get(
   "/me",
   checkAuth(...Object.values(Role), "admin"),
   UserController.getMe
 );
+router.get("/", checkAuth("admin"), UserController.getAllUser);
 router.get("/:phone", checkAuth("admin"), UserController.getSingleUser);
 
 export const UserRoutes = router;

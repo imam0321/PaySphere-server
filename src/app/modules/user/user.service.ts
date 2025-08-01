@@ -1,19 +1,43 @@
-import AppError from "../../errorHelpers/AppError";
-import { IUser, Role } from "./user.interface";
+import { Role } from "./user.interface";
 import { User } from "./user.model";
-import httpStatus from "http-status-codes";
-import bcryptjs from "bcryptjs";
-import { envVars } from "../../config/env";
-import { IWallet, WalletStatus } from "../wallet/wallet.interface";
-import { Wallet } from "../wallet/wallet.model";
-import {
-  ITransaction,
-  TransactionStatus,
-  TransactionType,
-} from "../transaction/transaction.interface";
-import { Transaction } from "../transaction/transaction.model";
 import { QueryBuilder } from "../../utils/QueryBuilder";
 import { UserSearchableFields } from "./user.constant";
+import { Wallet } from "../wallet/wallet.model";
+import { WalletService } from "../wallet/wallet.service";
+import AppError from "../../errorHelpers/AppError";
+import httpStatus from "http-status-codes";
+import { TransactionService } from "../transaction/transaction.service";
+
+
+const addMoney = async (userId: string, amount: number) => {
+  const session = await Wallet.startSession();
+  session.startTransaction();
+  try {
+    const wallet = await WalletService.addMoney(userId, amount, session);
+
+    if (!wallet) {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        "Money was not added to wallet!"
+      );
+    }
+
+    const transaction = await TransactionService.addMoneyTransaction(
+      wallet,
+      amount,
+      session
+    );
+
+    await session.commitTransaction();
+    session.endSession();
+
+    return transaction;
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    throw error;
+  }
+};
 
 const getMe = async (userId: string) => {
   const myInfo = await User.findById(userId)
@@ -25,7 +49,10 @@ const getMe = async (userId: string) => {
 };
 
 const getAllUser = async (query: Record<string, string>) => {
-  const queryBuilder = new QueryBuilder(User.find().select("-password"), query);
+  const queryBuilder = new QueryBuilder(
+    User.find({ role: Role.user }).select("-password"),
+    query
+  );
 
   const users = queryBuilder
     .search(UserSearchableFields)
@@ -55,6 +82,7 @@ const getSingleUser = async (phone: string) => {
 };
 
 export const UserService = {
+  addMoney,
   getMe,
   getAllUser,
   getSingleUser,

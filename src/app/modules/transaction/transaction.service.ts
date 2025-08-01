@@ -15,10 +15,16 @@ const createTransaction = async (
   transactionPayload: ITransaction,
   session?: any
 ) => {
-  const [transaction] = await Transaction.create([transactionPayload], {
-    session,
-  });
-  return transaction;
+  try {
+    const [transaction] = await Transaction.create([transactionPayload], {
+      new: true,
+      runValidators: true,
+      session,
+    });
+    return transaction;
+  } catch (error) {
+    throw new AppError(httpStatus.INTERNAL_SERVER_ERROR, "Transaction failed!");
+  }
 };
 
 const initialFunding = async (
@@ -26,81 +32,124 @@ const initialFunding = async (
   initialFundingAmount: number,
   session: any
 ) => {
-  const admin = await User.findOne({ email: process.env.ADMIN_EMAIL });
+  try {
+    const admin = await User.findOne({ email: process.env.ADMIN_EMAIL });
 
-  if (!admin) throw new AppError(httpStatus.NOT_FOUND, "Admin not found");
+    if (!admin) throw new AppError(httpStatus.NOT_FOUND, "Admin not found");
 
-  const adminWallet = await Wallet.findOne({ userId: admin._id });
+    const adminWallet = await Wallet.findOne({ userId: admin._id });
 
-  if (!adminWallet)
-    throw new AppError(httpStatus.NOT_FOUND, "Admin wallet not found");
+    if (!adminWallet)
+      throw new AppError(httpStatus.NOT_FOUND, "Admin wallet not found");
 
-  if (adminWallet.balance < initialFundingAmount) {
+    if (adminWallet.balance < initialFundingAmount) {
+      throw new AppError(
+        httpStatus.FORBIDDEN,
+        "Admin wallet has insufficient balance"
+      );
+    }
+
+    if (!userWallet) {
+      throw new AppError(httpStatus.BAD_REQUEST, "User wallet not found");
+    }
+
+    adminWallet.balance -= initialFundingAmount;
+    userWallet.balance += initialFundingAmount;
+
+    await Promise.all([
+      adminWallet.save({ session }),
+      userWallet.save({ session }),
+    ]);
+
+    const sharedTransactionPayload = {
+      fromWalletId: adminWallet._id as Types.ObjectId,
+      toWalletId: userWallet._id as Types.ObjectId,
+      amount: initialFundingAmount,
+      commission: 0,
+      status: TransactionStatus.approved,
+    };
+
+    const adminTransactionPayload: ITransaction = {
+      ...sharedTransactionPayload,
+      type: TransactionType.cash_out,
+      currentBalance: adminWallet.balance,
+      initiatedBy: admin._id,
+      purpose: "Initial funding to new user",
+    };
+
+    const userTransactionPayload: ITransaction = {
+      ...sharedTransactionPayload,
+      type: TransactionType.cash_in,
+      currentBalance: userWallet.balance,
+      initiatedBy: userWallet.userId,
+      purpose: "Initial admin funding",
+    };
+
+    const [adminTransaction, userTransaction] = await Promise.all([
+      createTransaction(adminTransactionPayload, session),
+      createTransaction(userTransactionPayload, session),
+    ]);
+
+    await User.findByIdAndUpdate(
+      admin._id,
+      { $push: { transactionId: adminTransaction._id } },
+      { session }
+    );
+
+    const user = await User.findByIdAndUpdate(
+      userWallet.userId,
+      { $push: { transactionId: userTransaction._id } },
+      { new: true, runValidators: true, session }
+    )
+      .populate("walletId", "balance")
+      .populate("transactionId", "fromWalletId type")
+      .select("-password");
+
+    return user;
+  } catch (error) {
     throw new AppError(
-      httpStatus.FORBIDDEN,
-      "Admin wallet has insufficient balance"
+      httpStatus.INTERNAL_SERVER_ERROR,
+      "Initial Funding failed!"
     );
   }
+};
 
-  if (!userWallet) {
-    throw new AppError(httpStatus.BAD_REQUEST, "User wallet not found");
+const addMoneyTransaction = async (
+  wallet: IWalletDocument,
+  amount: number,
+  session: any
+) => {
+  try {
+    const addMoneyTransaction = await TransactionService.createTransaction(
+      {
+        toWalletId: wallet._id as Types.ObjectId,
+        amount: amount,
+        status: TransactionStatus.approved,
+        type: TransactionType.add_money,
+        currentBalance: wallet.balance,
+        initiatedBy: wallet.userId,
+        purpose: "Self",
+      },
+      session
+    );
+
+    await User.findByIdAndUpdate(
+      wallet.userId,
+      { $push: { transactionId: addMoneyTransaction._id } },
+      { session }
+    );
+
+    return addMoneyTransaction
+  } catch (error) {
+    throw new AppError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      "Add Money Transaction failed!"
+    );
   }
-
-  adminWallet.balance -= initialFundingAmount;
-  userWallet.balance += initialFundingAmount;
-
-  await Promise.all([
-    adminWallet.save({ session }),
-    userWallet.save({ session }),
-  ]);
-
-  const sharedTransactionPayload = {
-    fromWalletId: adminWallet._id as Types.ObjectId,
-    toWalletId: userWallet._id as Types.ObjectId,
-    amount: initialFundingAmount,
-    commission: 0,
-    status: TransactionStatus.approved,
-  };
-
-  const adminTransactionPayload: ITransaction = {
-    ...sharedTransactionPayload,
-    type: TransactionType.cash_out,
-    currentBalance: adminWallet.balance,
-    initiatedBy: admin._id,
-    purpose: "Initial funding to new user",
-  };
-
-  const userTransactionPayload: ITransaction = {
-    ...sharedTransactionPayload,
-    type: TransactionType.cash_in,
-    currentBalance: userWallet.balance,
-    initiatedBy: userWallet.userId,
-    purpose: "Initial admin funding",
-  };
-
-  const [adminTransaction, userTransaction] = await Promise.all([
-    createTransaction(adminTransactionPayload, session),
-    createTransaction(userTransactionPayload, session),
-  ]);
-
-  await User.findByIdAndUpdate(
-    admin._id,
-    { $push: { transactionId: adminTransaction._id } },
-    { session }
-  );
-
-  const user = await User.findByIdAndUpdate(
-    userWallet.userId,
-    { $push: { transactionId: userTransaction._id } },
-    { new: true, runValidators: true, session }
-  )
-    .populate("walletId", "balance")
-    .populate("transactionId", "fromWalletId type")
-    .select("-password");
-
-  return user;
 };
 
 export const TransactionService = {
+  createTransaction,
   initialFunding,
+  addMoneyTransaction,
 };
