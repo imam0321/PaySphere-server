@@ -26,5 +26,6 @@ export interface IUser {
   walletId?: Types.ObjectId; 
   transactionId?: Types.ObjectId[]
   isApproved?: boolean;
+  feeRate?: number;
   commissionRate?: number;
 }

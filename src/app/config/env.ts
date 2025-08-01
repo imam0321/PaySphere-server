@@ -12,6 +12,10 @@ interface EnvConfig {
   FRONTEND_URL: string;
   BCRYPT_SALT_ROUND: string;
   EXPRESS_SESSION_SECRET: string;
+  ADMIN_COMMISSION_RATE: string;
+  AGENT_COMMISSION_RATE: string;
+  AGENT_FEE_RATE: string;
+  USER_FEE_RATE: string;
   USER_INITIAL_FUNDING_AMOUNT: string;
   JWT: {
     JWT_ACCESS_SECRET: string;
@@ -32,6 +36,10 @@ const loadEnvVariables = (): EnvConfig => {
     "FRONTEND_URL",
     "BCRYPT_SALT_ROUND",
     "EXPRESS_SESSION_SECRET",
+    "ADMIN_COMMISSION_RATE",
+    "AGENT_COMMISSION_RATE",
+    "AGENT_FEE_RATE",
+    "USER_FEE_RATE",
     "USER_INITIAL_FUNDING_AMOUNT",
     "JWT_ACCESS_SECRET",
     "JWT_ACCESS_EXPIRES",
@@ -55,6 +63,10 @@ const loadEnvVariables = (): EnvConfig => {
     FRONTEND_URL: process.env.FRONTEND_URL as string,
     BCRYPT_SALT_ROUND: process.env.BCRYPT_SALT_ROUND as string,
     EXPRESS_SESSION_SECRET: process.env.EXPRESS_SESSION_SECRET as string,
+    ADMIN_COMMISSION_RATE: process.env.ADMIN_COMMISSION_RATE as string,
+    AGENT_COMMISSION_RATE: process.env.AGENT_COMMISSION_RATE as string,
+    AGENT_FEE_RATE: process.env.EXPRESS_SESSION_SECRET as string,
+    USER_FEE_RATE: process.env.EXPRESS_SESSION_SECRET as string,
     USER_INITIAL_FUNDING_AMOUNT: process.env
       .USER_INITIAL_FUNDING_AMOUNT as string,
     JWT: {

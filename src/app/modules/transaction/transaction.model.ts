@@ -13,9 +13,9 @@ const transactionSchema = new Schema<ITransaction>(
     amount: { type: Number, required: true },
     fee: { type: Number },
     commission: { type: Number },
-    currentBalance: { type: Number, required: true },
+    currentBalance: { type: Number, required: true, min: 0 },
     initiatedBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    purpose: {type: String}
+    purpose: { type: String },
   },
   {
     timestamps: true,
