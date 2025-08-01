@@ -5,7 +5,7 @@ import { User } from "../modules/user/user.model";
 import bcryptjs from "bcryptjs";
 import { IWallet, WalletStatus } from "../modules/wallet/wallet.interface";
 import { Wallet } from "../modules/wallet/wallet.model";
-import mongoose from "mongoose";
+import mongoose, { Types } from "mongoose";
 import { Transaction } from "../modules/transaction/transaction.model";
 import {
   ITransaction,
@@ -37,49 +37,53 @@ export const seedAdmin = async () => {
         password: hashPassword,
         isVerified: true,
         isApproved: true,
+        commissionRate: Number(envVars.ADMIN_COMMISSION_RATE),
         isActive: IsActive.active,
       };
 
-      const createAdmin = await User.create([adminPayload], { session });
+      const [createAdmin] = await User.create([adminPayload], { session });
 
-      if (!createAdmin || createAdmin.length === 0) {
+      if (!createAdmin) {
         throw new Error("Admin creation failed");
       }
 
       const walletPayload: IWallet = {
-        userId: createAdmin[0]._id,
+        userId: createAdmin._id,
         balance: 200000,
         currency: "BDT",
         status: WalletStatus.active,
       };
 
-      const createWallet = await Wallet.create([walletPayload], { session });
+      const [createWallet] = await Wallet.create([walletPayload], { session });
 
-      if (!createWallet || createWallet.length === 0) {
+      if (!createWallet) {
         throw new Error("Wallet creation failed");
       }
 
       const transactionPayload: ITransaction = {
-        fromWalletId: createWallet[0]._id,
-        toWalletId: createWallet[0]._id,
+        fromWalletId: createWallet._id as Types.ObjectId,
+        toWalletId: createWallet._id as Types.ObjectId,
         type: TransactionType.add_money,
         status: TransactionStatus.approved,
         amount: 200000,
         commission: 0,
         currentBalance: 200000,
-        initiatedBy: createAdmin[0]._id,
+        initiatedBy: createAdmin._id,
         purpose: "Initial admin funding",
       };
 
-      const createdTransaction = await Transaction.create( [transactionPayload], { session, } );
+      const [createdTransaction] = await Transaction.create(
+        [transactionPayload],
+        { session }
+      );
 
-      if (!createdTransaction || createdTransaction.length === 0) {
+      if (!createdTransaction) {
         throw new Error("Transaction creation failed");
       }
 
-      createAdmin[0].walletId = createWallet[0]._id;
-      createAdmin[0].transactionId = [createdTransaction[0]._id];
-      await createAdmin[0].save({ session });
+      createAdmin.walletId = createWallet._id as Types.ObjectId;
+      createAdmin.transactionId = [createdTransaction._id];
+      await createAdmin.save({ session });
 
       await session.commitTransaction();
       console.log("Admin and wallet seeded successfully.");

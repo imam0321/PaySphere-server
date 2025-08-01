@@ -4,7 +4,7 @@ import { IWalletDocument, WalletStatus } from "./wallet.interface";
 const walletSchema = new Schema<IWalletDocument>(
   {
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    balance: { type: Number, required: true, default: 0 },
+    balance: { type: Number, required: true, min: 0 },
     currency: { type: String, enum: ["BDT"], default: "BDT" },
     status: {
       type: String,

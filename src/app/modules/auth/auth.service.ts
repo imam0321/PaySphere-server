@@ -10,12 +10,12 @@ import { WalletService } from "../wallet/wallet.service";
 import { TransactionService } from "../transaction/transaction.service";
 import { Types } from "mongoose";
 
-const register = async (payload: Partial<IUser>) => {
+const register = async (payload: Partial<IUser>, role: Role) => {
   const session = await User.startSession();
   session.startTransaction();
-  
+
   try {
-    const { email, password, role, ...rest } = payload;
+    const { email, password, ...rest } = payload;
 
     const isUserExist = await User.findOne({ email });
     if (isUserExist) {
@@ -27,42 +27,45 @@ const register = async (payload: Partial<IUser>) => {
       Number(envVars.BCRYPT_SALT_ROUND)
     );
 
-    const [user] = await User.create(
-      [
-        {
-          email,
-          password: hashedPassword,
-          commissionRate: role === Role.agent ? 5 : undefined,
-          ...rest,
-        },
-      ],
-      { session }
-    );
+    const userPayload: Partial<IUser> = {
+      email,
+      password: hashedPassword,
+      role,
+      ...rest,
+    };
+
+    if (role === Role.agent) {
+      userPayload.feeRate = Number(envVars.AGENT_FEE_RATE) || 15;
+      userPayload.commissionRate = Number(envVars.AGENT_COMMISSION_RATE) || 5;
+      userPayload.isApproved = false;
+    } else if (role === Role.user) {
+      userPayload.feeRate = Number(envVars.USER_FEE_RATE) || 20;
+    }
+
+    const [user] = await User.create([userPayload], { session });
 
     const userWallet = await WalletService.createWallet(user._id, session);
-
     user.walletId = userWallet._id as Types.ObjectId;
     await user.save({ session });
 
-    if (user.role === "agent") {
+    let responseData;
+
+    if (role === Role.agent) {
       const agentInfo = user.toObject();
       delete agentInfo.password;
-      await session.commitTransaction();
-      session.endSession();
-      return agentInfo;
+      responseData = agentInfo;
+    } else {
+      const updatedUser = await TransactionService.initialFunding(
+        userWallet,
+        Number(envVars.USER_INITIAL_FUNDING_AMOUNT),
+        session
+      );
+      responseData = updatedUser;
     }
-
-    const updatedUser = await TransactionService.initialFunding(
-      userWallet,
-      50,
-      session
-    );
 
     await session.commitTransaction();
     session.endSession();
-    return {
-      data: updatedUser,
-    };
+    return { data: responseData };
   } catch (error: any) {
     await session.abortTransaction();
     session.endSession();

@@ -15,15 +15,15 @@ const createTransaction = async (
   transactionPayload: ITransaction,
   session?: any
 ) => {
-  const transaction = await Transaction.create([transactionPayload], {
+  const [transaction] = await Transaction.create([transactionPayload], {
     session,
   });
-  return transaction[0];
+  return transaction;
 };
 
 const initialFunding = async (
   userWallet: IWalletDocument,
-  fundingAmount: number,
+  initialFundingAmount: number,
   session: any
 ) => {
   const admin = await User.findOne({ email: process.env.ADMIN_EMAIL });
@@ -35,7 +35,7 @@ const initialFunding = async (
   if (!adminWallet)
     throw new AppError(httpStatus.NOT_FOUND, "Admin wallet not found");
 
-  if (adminWallet.balance < fundingAmount) {
+  if (adminWallet.balance < initialFundingAmount) {
     throw new AppError(
       httpStatus.FORBIDDEN,
       "Admin wallet has insufficient balance"
@@ -43,37 +43,36 @@ const initialFunding = async (
   }
 
   if (!userWallet) {
-    throw new AppError(httpStatus.FORBIDDEN, "User wallet not found");
+    throw new AppError(httpStatus.BAD_REQUEST, "User wallet not found");
   }
 
-  adminWallet.balance -= fundingAmount;
-  userWallet.balance += fundingAmount;
+  adminWallet.balance -= initialFundingAmount;
+  userWallet.balance += initialFundingAmount;
 
   await Promise.all([
     adminWallet.save({ session }),
     userWallet.save({ session }),
   ]);
 
-  // Create transactions
-  const adminTransactionPayload: ITransaction = {
+  const sharedTransactionPayload = {
     fromWalletId: adminWallet._id as Types.ObjectId,
     toWalletId: userWallet._id as Types.ObjectId,
-    type: TransactionType.cash_out,
-    status: TransactionStatus.approved,
-    amount: fundingAmount,
+    amount: initialFundingAmount,
     commission: 0,
+    status: TransactionStatus.approved,
+  };
+
+  const adminTransactionPayload: ITransaction = {
+    ...sharedTransactionPayload,
+    type: TransactionType.cash_out,
     currentBalance: adminWallet.balance,
     initiatedBy: admin._id,
     purpose: "Initial funding to new user",
   };
 
   const userTransactionPayload: ITransaction = {
-    fromWalletId: adminWallet._id as Types.ObjectId,
-    toWalletId: userWallet._id as Types.ObjectId,
+    ...sharedTransactionPayload,
     type: TransactionType.cash_in,
-    status: TransactionStatus.approved,
-    amount: fundingAmount,
-    commission: 0,
     currentBalance: userWallet.balance,
     initiatedBy: userWallet.userId,
     purpose: "Initial admin funding",
@@ -84,7 +83,6 @@ const initialFunding = async (
     createTransaction(userTransactionPayload, session),
   ]);
 
-  // Push transactions to users
   await User.findByIdAndUpdate(
     admin._id,
     { $push: { transactionId: adminTransaction._id } },
