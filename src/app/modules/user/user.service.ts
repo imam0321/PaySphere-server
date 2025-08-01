@@ -1,13 +1,9 @@
-import { Role } from "./user.interface";
 import { User } from "./user.model";
-import { QueryBuilder } from "../../utils/QueryBuilder";
-import { UserSearchableFields } from "./user.constant";
 import { Wallet } from "../wallet/wallet.model";
 import { WalletService } from "../wallet/wallet.service";
 import AppError from "../../errorHelpers/AppError";
 import httpStatus from "http-status-codes";
 import { TransactionService } from "../transaction/transaction.service";
-
 
 const addMoney = async (userId: string, amount: number) => {
   const session = await Wallet.startSession();
@@ -48,42 +44,9 @@ const getMe = async (userId: string) => {
   };
 };
 
-const getAllUser = async (query: Record<string, string>) => {
-  const queryBuilder = new QueryBuilder(
-    User.find({ role: Role.user }).select("-password"),
-    query
-  );
 
-  const users = queryBuilder
-    .search(UserSearchableFields)
-    .sort()
-    .fields()
-    .filter()
-    .paginate();
-
-  const [data, meta] = await Promise.all([
-    users.build(),
-    queryBuilder.getMeta(),
-  ]);
-
-  return {
-    data,
-    meta,
-  };
-};
-
-const getSingleUser = async (phone: string) => {
-  const userInfo = await User.findOne({ phone })
-    .select("-password")
-    .populate("walletId", "balance status");
-  return {
-    data: userInfo,
-  };
-};
 
 export const UserService = {
   addMoney,
   getMe,
-  getAllUser,
-  getSingleUser,
 };

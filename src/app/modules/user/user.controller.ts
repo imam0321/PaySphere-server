@@ -49,39 +49,9 @@ const getMe = catchAsync(
   }
 );
 
-const getAllUser = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const result = await UserService.getAllUser(
-      req.query as Record<string, string>
-    );
-
-    sendResponse(res, {
-      statusCode: httpStatus.OK,
-      success: true,
-      message: "All Users retrieved successfully",
-      data: result.data,
-      meta: result.meta,
-    });
-  }
-);
-
-const getSingleUser = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const result = await UserService.getSingleUser(req.params.phone);
-
-    sendResponse(res, {
-      statusCode: httpStatus.OK,
-      success: true,
-      message: "User Retrieved Successfully",
-      data: result,
-    });
-  }
-);
 
 export const UserController = {
   registerUser,
   addMoney,
   getMe,
-  getAllUser,
-  getSingleUser,
 };

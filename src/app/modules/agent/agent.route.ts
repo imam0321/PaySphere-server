@@ -12,6 +12,5 @@ router.post(
   validateRequest(createUserZodSchema),
   AgentController.registerAgent
 );
-router.get("/", checkAuth(Role.admin), AgentController.getAllAgent)
 
 export const AgentRoutes = router;
