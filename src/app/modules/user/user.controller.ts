@@ -5,6 +5,21 @@ import { sendResponse } from "../../utils/sendResponse";
 import httpStatus from "http-status-codes";
 import { UserService } from "./user.service";
 import { JwtPayload } from "jsonwebtoken";
+import { Role } from "./user.interface";
+import { AuthService } from "../auth/auth.service";
+
+const registerUser = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const result = await AuthService.register(req.body, Role.user);
+
+    sendResponse(res, {
+      statusCode: httpStatus.CREATED,
+      success: true,
+      message: "User registered successfully",
+      data: result,
+    });
+  }
+);
 
 const getMe = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -49,4 +64,9 @@ const getSingleUser = catchAsync(
   }
 );
 
-export const UserController = { getMe, getAllUser, getSingleUser };
+export const UserController = {
+  registerUser,
+  getMe,
+  getAllUser,
+  getSingleUser,
+};
