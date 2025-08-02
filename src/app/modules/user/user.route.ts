@@ -12,8 +12,6 @@ router.post(
   validateRequest(createUserZodSchema),
   UserController.registerUser
 );
-router.post("/add-money", checkAuth(Role.user), UserController.addMoney);
-
 router.get(
   "/me",
   checkAuth(...Object.values(Role), "admin"),

@@ -6,10 +6,18 @@ export enum WalletStatus {
 }
 
 export interface IWallet {
+  _id?: Types.ObjectId;
   userId: Types.ObjectId;
   balance: number;
   currency: "BDT";
   status: WalletStatus;
 }
 
-export interface IWalletDocument extends IWallet, Document {}
+// export interface IWallet {
+//   userId: Types.ObjectId;
+//   balance: number;
+//   currency: "BDT";
+//   status: WalletStatus;
+// }
+
+// export interface IWalletDocument extends IWallet, Document {}
