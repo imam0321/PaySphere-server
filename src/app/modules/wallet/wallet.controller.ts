@@ -34,7 +34,23 @@ const cashIn = catchAsync(
   }
 );
 
+const cashOut = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const {userId} = req.user as JwtPayload;
+    const { agentWalletId, amount } = req.body;
+    const result = await WalletService.cashOut(userId, agentWalletId, amount);
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Cash Out Successfully",
+      data: result,
+    });
+  }
+);
+
 export const WalletController = {
   addMoney,
-  cashIn
+  cashIn,
+  cashOut
 };
