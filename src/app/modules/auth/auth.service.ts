@@ -110,6 +110,15 @@ const credentialLogin = async (payload: Partial<IUser>) => {
   };
 };
 
+const getMe = async (userId: string) => {
+  const myInfo = await User.findById(userId)
+    .select("-password")
+    .populate("walletId", "balance status");
+  return {
+    data: myInfo,
+  };
+};
+
 const getNewAccessToken = async (refreshToken: string) => {
   const newAccessToken = await createNewAccessTokenWithRefreshToken(
     refreshToken
@@ -154,6 +163,7 @@ const changePassword = async (
 export const AuthService = {
   register,
   credentialLogin,
+  getMe,
   getNewAccessToken,
   changePassword,
 };

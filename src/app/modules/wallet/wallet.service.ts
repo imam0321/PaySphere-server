@@ -1,15 +1,12 @@
 import { ClientSession, Types } from "mongoose";
 import { IWallet, WalletStatus } from "./wallet.interface";
 import { Wallet } from "./wallet.model";
-import { User } from "../user/user.model";
 import AppError from "../../errorHelpers/AppError";
 import httpStatus from "http-status-codes";
 import { TransactionService } from "../transaction/transaction.service";
-import { envVars } from "../../config/env";
-import {
-  TransactionStatus,
-  TransactionType,
-} from "../transaction/transaction.interface";
+import { findUserAndWallet } from "../../utils/findUserAndWallet";
+import { getAdminWallet } from "../../utils/getAdminWallet";
+import { incrementWalletBalance } from "../../utils/incrementWalletBalance";
 
 const createWallet = async (
   userId: Types.ObjectId,
@@ -31,11 +28,7 @@ const addMoney = async (userId: string, amount: number) => {
   session.startTransaction();
 
   try {
-    const user = await User.findById(userId);
-
-    if (!user) {
-      throw new AppError(httpStatus.NOT_FOUND, "User not found");
-    }
+    const { user, wallet } = await findUserAndWallet(userId, session);
 
     if (user.isApproved === false) {
       throw new AppError(
@@ -44,22 +37,14 @@ const addMoney = async (userId: string, amount: number) => {
       );
     }
 
-    const wallet = await Wallet.findById(user.walletId);
-
-    if (!wallet) {
-      throw new AppError(httpStatus.NOT_FOUND, "Wallet not found");
-    }
-
     if (wallet.status === WalletStatus.blocked) {
       throw new AppError(httpStatus.FORBIDDEN, "Wallet is Blocked");
     }
 
-    const updateWallet = await Wallet.findByIdAndUpdate(
-      user.walletId,
-      {
-        $inc: { balance: amount },
-      },
-      { new: true, runValidators: true, session }
+    const updateWallet = await incrementWalletBalance(
+      wallet._id,
+      amount,
+      session
     );
 
     if (!updateWallet) {
@@ -77,7 +62,6 @@ const addMoney = async (userId: string, amount: number) => {
 
     await session.commitTransaction();
     session.endSession();
-
     return transaction;
   } catch (error) {
     await session.abortTransaction();
@@ -85,6 +69,7 @@ const addMoney = async (userId: string, amount: number) => {
     throw error;
   }
 };
+
 // TODO: Agent isApproved
 const cashIn = async (
   agentId: string,
@@ -94,12 +79,7 @@ const cashIn = async (
   const session = await Wallet.startSession();
   session.startTransaction();
   try {
-    const agent = await User.findById(agentId);
-    if (!agent) throw new AppError(httpStatus.NOT_FOUND, "Agent not found");
-
-    const agentWallet = await Wallet.findById(agent.walletId).session(session);
-    if (!agentWallet)
-      throw new AppError(httpStatus.NOT_FOUND, "Agent wallet not found");
+    const { wallet: agentWallet } = await findUserAndWallet(agentId, session);
 
     const userWallet = await Wallet.findById(userWalletId).session(session);
     if (!userWallet)
@@ -112,16 +92,8 @@ const cashIn = async (
       );
 
     const [updatedAgentWallet, updatedUserWallet] = await Promise.all([
-      Wallet.findByIdAndUpdate(
-        agentWallet._id,
-        { $inc: { balance: -amount } },
-        { new: true, runValidators: true, session }
-      ),
-      Wallet.findByIdAndUpdate(
-        userWallet._id,
-        { $inc: { balance: amount } },
-        { new: true, runValidators: true, session }
-      ),
+      incrementWalletBalance(agentWallet._id, -amount, session),
+      incrementWalletBalance(userWallet._id, amount, session),
     ]);
 
     const transaction = await TransactionService.cashIn(
@@ -150,12 +122,10 @@ const cashOut = async (
   session.startTransaction();
 
   try {
-    const user = await User.findById(userId);
-    if (!user) throw new AppError(httpStatus.NOT_FOUND, "User not found");
-
-    const userWallet = await Wallet.findById(user.walletId).session(session);
-    if (!userWallet)
-      throw new AppError(httpStatus.NOT_FOUND, "User wallet not found");
+    const { user, wallet: userWallet } = await findUserAndWallet(
+      userId,
+      session
+    );
 
     const agentWallet = await Wallet.findById(agentWalletId).session(session);
     if (!agentWallet)
@@ -171,35 +141,15 @@ const cashOut = async (
         "User wallet has insufficient balance (including fee)"
       );
 
-    const admin = await User.findOne({ email: envVars.ADMIN_EMAIL });
-    if (!admin || !admin.walletId) {
-      throw new AppError(httpStatus.NOT_FOUND, "Admin not found");
-    }
-
-    const adminWallet = await Wallet.findById(admin.walletId).session(session);
-    if (!adminWallet) {
-      throw new AppError(httpStatus.NOT_FOUND, "Admin wallet not found");
-    }
+    const adminWallet = await getAdminWallet(session);
 
     const [updatedUserWallet, updatedAgentWallet, updatedAdminWallet] =
       await Promise.all([
-        Wallet.findByIdAndUpdate(
-          userWallet._id,
-          { $inc: { balance: -totalAmount } },
-          { new: true, runValidators: true, session }
-        ),
-        Wallet.findByIdAndUpdate(
-          agentWallet._id,
-          { $inc: { balance: amount } },
-          { new: true, runValidators: true, session }
-        ),
-        Wallet.findByIdAndUpdate(
-          adminWallet._id,
-          { $inc: { balance: feeAmount } },
-          { new: true, runValidators: true, session }
-        ),
+        incrementWalletBalance(userWallet._id, -totalAmount, session),
+        incrementWalletBalance(agentWallet._id, amount, session),
+        incrementWalletBalance(adminWallet._id, feeAmount, session),
       ]);
-      
+
     const transaction = await TransactionService.cashOut(
       updatedUserWallet,
       updatedAgentWallet,

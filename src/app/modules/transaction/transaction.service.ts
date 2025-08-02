@@ -2,7 +2,6 @@ import { ClientSession, Types } from "mongoose";
 import AppError from "../../errorHelpers/AppError";
 import { User } from "../user/user.model";
 import { IWallet } from "../wallet/wallet.interface";
-import { Wallet } from "../wallet/wallet.model";
 import {
   ITransaction,
   TransactionStatus,
@@ -10,7 +9,9 @@ import {
 } from "./transaction.interface";
 import { Transaction } from "./transaction.model";
 import httpStatus from "http-status-codes";
-import { envVars } from "../../config/env";
+import { getAdminWallet } from "../../utils/getAdminWallet";
+import { incrementWalletBalance } from "../../utils/incrementWalletBalance";
+import { pushTransactionToUser } from "../../utils/pushTransactionToUser";
 
 const createTransaction = async (
   transactionPayload: ITransaction,
@@ -34,14 +35,7 @@ const initialFunding = async (
   session: ClientSession
 ) => {
   try {
-    const admin = await User.findOne({ email: process.env.ADMIN_EMAIL });
-
-    if (!admin) throw new AppError(httpStatus.NOT_FOUND, "Admin not found");
-
-    const adminWallet = await Wallet.findOne({ userId: admin._id });
-
-    if (!adminWallet)
-      throw new AppError(httpStatus.NOT_FOUND, "Admin wallet not found");
+    const adminWallet = await getAdminWallet(session);
 
     if (adminWallet.balance < initialFundingAmount) {
       throw new AppError(
@@ -50,20 +44,12 @@ const initialFunding = async (
       );
     }
 
-    if (!userWallet) {
-      throw new AppError(httpStatus.BAD_REQUEST, "User wallet not found");
-    }
-
     const [updatedAdminWallet, updatedUserWallet] = await Promise.all([
-      Wallet.findByIdAndUpdate(
-        adminWallet._id,
-        { $inc: { balance: -initialFundingAmount } },
-        { new: true, runValidators: true, session }
-      ),
-      Wallet.findByIdAndUpdate(
-        userWallet._id,
-        { $inc: { balance: initialFundingAmount } },
-        { new: true, runValidators: true, session }
+      incrementWalletBalance(adminWallet._id, -initialFundingAmount, session),
+      incrementWalletBalance(
+        userWallet._id as Types.ObjectId,
+        initialFundingAmount,
+        session
       ),
     ]);
 
@@ -79,7 +65,7 @@ const initialFunding = async (
       ...sharedTransactionPayload,
       type: TransactionType.cash_out,
       currentBalance: updatedAdminWallet.balance,
-      initiatedBy: admin._id,
+      initiatedBy: adminWallet.userId,
       purpose: "Initial funding to new user",
     };
 
@@ -96,10 +82,10 @@ const initialFunding = async (
       createTransaction(userTransactionPayload, session),
     ]);
 
-    await User.findByIdAndUpdate(
-      admin._id,
-      { $push: { transactionId: adminTransaction._id } },
-      { session }
+    await pushTransactionToUser(
+      adminWallet.userId,
+      adminTransaction._id,
+      session
     );
 
     const user = await User.findByIdAndUpdate(
@@ -139,10 +125,10 @@ const addMoney = async (
       session
     );
 
-    await User.findByIdAndUpdate(
+    await pushTransactionToUser(
       wallet.userId,
-      { $push: { transactionId: addMoneyTransaction._id } },
-      { session }
+      addMoneyTransaction._id,
+      session
     );
 
     return addMoneyTransaction;
@@ -189,16 +175,8 @@ const cashIn = async (
     ]);
 
     await Promise.all([
-      User.findByIdAndUpdate(
-        agentWallet.userId,
-        { $push: { transactionId: cashIn._id } },
-        { runValidators: true, session }
-      ),
-      User.findByIdAndUpdate(
-        userWallet.userId,
-        { $push: { transactionId: receiveMoney._id } },
-        { runValidators: true, session }
-      ),
+      pushTransactionToUser(agentWallet.userId, cashIn._id, session),
+      pushTransactionToUser(userWallet.userId, receiveMoney._id, session),
     ]);
 
     return cashIn;
@@ -262,25 +240,17 @@ const cashOut = async (
       ]);
 
     await Promise.all([
-      User.findByIdAndUpdate(
+      pushTransactionToUser(
         agentWallet.userId,
-        { $push: { transactionId: cashOutTransaction._id } },
-        { runValidators: true, session }
+        cashOutTransaction._id,
+        session
       ),
-      User.findByIdAndUpdate(
+      pushTransactionToUser(
         userWallet.userId,
-        {
-          $push: {
-            transactionId: withdrawTransaction._id,
-          },
-        },
-        { runValidators: true, session }
+        withdrawTransaction._id,
+        session
       ),
-      User.findByIdAndUpdate(
-        adminWallet.userId,
-        { $push: { transactionId: feeTransaction._id } },
-        { runValidators: true, session }
-      ),
+      pushTransactionToUser(adminWallet.userId, feeTransaction._id, session),
     ]);
 
     return cashOutTransaction;
