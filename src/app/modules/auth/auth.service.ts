@@ -12,6 +12,9 @@ import { envVars } from "../../config/env";
 import { WalletService } from "../wallet/wallet.service";
 import { TransactionService } from "../transaction/transaction.service";
 import { Types } from "mongoose";
+import { getAdminWallet } from "../../utils/getAdminWallet";
+import { incrementWalletBalance } from "../../utils/incrementWalletBalance";
+import { IWallet } from "../wallet/wallet.interface";
 
 const register = async (payload: Partial<IUser>, role: Role) => {
   const session = await User.startSession();
@@ -59,9 +62,29 @@ const register = async (payload: Partial<IUser>, role: Role) => {
       delete agentInfo.password;
       responseData = agentInfo;
     } else {
+      const initialFundingAmount = Number(envVars.USER_INITIAL_FUNDING_AMOUNT);
+      const adminWallet = await getAdminWallet(session);
+
+      if (adminWallet.balance < initialFundingAmount) {
+        throw new AppError(
+          httpStatus.FORBIDDEN,
+          "Admin wallet has insufficient balance"
+        );
+      }
+
+      const [updatedAdminWallet, updatedUserWallet] = await Promise.all([
+        incrementWalletBalance(adminWallet._id, -initialFundingAmount, session),
+        incrementWalletBalance(
+          userWallet._id as Types.ObjectId,
+          initialFundingAmount,
+          session
+        ),
+      ]);
+
       const updatedUser = await TransactionService.initialFunding(
-        userWallet,
-        Number(envVars.USER_INITIAL_FUNDING_AMOUNT),
+        updatedAdminWallet as IWallet,
+        updatedUserWallet as IWallet,
+        initialFundingAmount,
         session
       );
       responseData = updatedUser;

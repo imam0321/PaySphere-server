@@ -6,7 +6,7 @@ import { Role } from "../user/user.interface";
 const router = Router();
 
 router.post("/login", AuthController.credentialLogin);
-router.post("/me", checkAuth(...Object.values(Role)), AuthController.getMe);
+router.get("/me", checkAuth(...Object.values(Role)), AuthController.getMe);
 router.post("/refresh-token", AuthController.getNewAccessToken);
 router.post(
   "/change-password",

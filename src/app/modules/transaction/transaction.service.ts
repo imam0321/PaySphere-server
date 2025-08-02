@@ -9,8 +9,6 @@ import {
 } from "./transaction.interface";
 import { Transaction } from "./transaction.model";
 import httpStatus from "http-status-codes";
-import { getAdminWallet } from "../../utils/getAdminWallet";
-import { incrementWalletBalance } from "../../utils/incrementWalletBalance";
 import { pushTransactionToUser } from "../../utils/pushTransactionToUser";
 
 const createTransaction = async (
@@ -30,66 +28,51 @@ const createTransaction = async (
 };
 
 const initialFunding = async (
-  userWallet: IWallet,
+  updatedAdminWallet: IWallet,
+  updatedUserWallet: IWallet,
   initialFundingAmount: number,
   session: ClientSession
 ) => {
   try {
-    const adminWallet = await getAdminWallet(session);
-
-    if (adminWallet.balance < initialFundingAmount) {
-      throw new AppError(
-        httpStatus.FORBIDDEN,
-        "Admin wallet has insufficient balance"
-      );
-    }
-
-    const [updatedAdminWallet, updatedUserWallet] = await Promise.all([
-      incrementWalletBalance(adminWallet._id, -initialFundingAmount, session),
-      incrementWalletBalance(
-        userWallet._id as Types.ObjectId,
-        initialFundingAmount,
+    const [adminTransaction, userTransaction] = await Promise.all([
+      createTransaction(
+        {
+          fromWalletId: updatedAdminWallet._id,
+          toWalletId: updatedUserWallet._id as Types.ObjectId,
+          amount: initialFundingAmount,
+          commission: 0,
+          status: TransactionStatus.approved,
+          type: TransactionType.cash_out,
+          currentBalance: updatedAdminWallet.balance,
+          initiatedBy: updatedAdminWallet.userId,
+          purpose: "Initial funding to new user",
+        },
+        session
+      ),
+      createTransaction(
+        {
+          fromWalletId: updatedAdminWallet._id,
+          toWalletId: updatedUserWallet._id as Types.ObjectId,
+          amount: initialFundingAmount,
+          commission: 0,
+          status: TransactionStatus.approved,
+          type: TransactionType.cash_in,
+          currentBalance: updatedUserWallet.balance,
+          initiatedBy: updatedUserWallet.userId,
+          purpose: "Initial admin funding",
+        },
         session
       ),
     ]);
 
-    const sharedTransactionPayload = {
-      fromWalletId: updatedAdminWallet._id as Types.ObjectId,
-      toWalletId: updatedUserWallet._id as Types.ObjectId,
-      amount: initialFundingAmount,
-      commission: 0,
-      status: TransactionStatus.approved,
-    };
-
-    const adminTransactionPayload: ITransaction = {
-      ...sharedTransactionPayload,
-      type: TransactionType.cash_out,
-      currentBalance: updatedAdminWallet.balance,
-      initiatedBy: adminWallet.userId,
-      purpose: "Initial funding to new user",
-    };
-
-    const userTransactionPayload: ITransaction = {
-      ...sharedTransactionPayload,
-      type: TransactionType.cash_in,
-      currentBalance: updatedUserWallet.balance,
-      initiatedBy: updatedUserWallet.userId,
-      purpose: "Initial admin funding",
-    };
-
-    const [adminTransaction, userTransaction] = await Promise.all([
-      createTransaction(adminTransactionPayload, session),
-      createTransaction(userTransactionPayload, session),
-    ]);
-
     await pushTransactionToUser(
-      adminWallet.userId,
+      updatedAdminWallet.userId,
       adminTransaction._id,
       session
     );
 
     const user = await User.findByIdAndUpdate(
-      userWallet.userId,
+      updatedUserWallet.userId,
       { $push: { transactionId: userTransaction._id } },
       { new: true, runValidators: true, session }
     )
@@ -112,7 +95,7 @@ const addMoney = async (
   session: ClientSession
 ) => {
   try {
-    const addMoneyTransaction = await TransactionService.createTransaction(
+    const addMoneyTransaction = await createTransaction(
       {
         toWalletId: wallet._id as Types.ObjectId,
         amount: amount,
@@ -148,7 +131,7 @@ const cashIn = async (
 ) => {
   try {
     const [cashIn, receiveMoney] = await Promise.all([
-      TransactionService.createTransaction(
+      createTransaction(
         {
           fromWalletId: agentWallet._id,
           toWalletId: userWallet._id as Types.ObjectId,
@@ -160,7 +143,7 @@ const cashIn = async (
         },
         session
       ),
-      TransactionService.createTransaction(
+      createTransaction(
         {
           fromWalletId: agentWallet._id,
           toWalletId: userWallet._id as Types.ObjectId,
@@ -199,7 +182,7 @@ const cashOut = async (
   try {
     const [cashOutTransaction, withdrawTransaction, feeTransaction] =
       await Promise.all([
-        TransactionService.createTransaction(
+        createTransaction(
           {
             fromWalletId: userWallet._id,
             toWalletId: agentWallet._id as Types.ObjectId,
@@ -212,7 +195,7 @@ const cashOut = async (
           },
           session
         ),
-        TransactionService.createTransaction(
+        createTransaction(
           {
             fromWalletId: userWallet._id,
             toWalletId: agentWallet._id as Types.ObjectId,
@@ -225,7 +208,7 @@ const cashOut = async (
           session
         ),
 
-        TransactionService.createTransaction(
+        createTransaction(
           {
             fromWalletId: userWallet._id,
             toWalletId: adminWallet._id as Types.ObjectId,

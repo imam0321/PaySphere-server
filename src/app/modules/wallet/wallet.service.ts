@@ -97,8 +97,8 @@ const cashIn = async (
     ]);
 
     const transaction = await TransactionService.cashIn(
-      updatedAgentWallet,
-      updatedUserWallet,
+      updatedAgentWallet as IWallet,
+      updatedUserWallet as IWallet,
       amount,
       session
     );
@@ -151,9 +151,9 @@ const cashOut = async (
       ]);
 
     const transaction = await TransactionService.cashOut(
-      updatedUserWallet,
-      updatedAgentWallet,
-      updatedAdminWallet,
+      updatedUserWallet as IWallet,
+      updatedAgentWallet as IWallet,
+      updatedAdminWallet as IWallet,
       amount,
       feeAmount,
       session
