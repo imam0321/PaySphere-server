@@ -1,8 +1,7 @@
-import { Types } from "mongoose";
+import { ClientSession, Types } from "mongoose";
 import AppError from "../../errorHelpers/AppError";
 import { User } from "../user/user.model";
-import { IWallet, IWalletDocument } from "../wallet/wallet.interface";
-import { Wallet } from "../wallet/wallet.model";
+import { IWallet } from "../wallet/wallet.interface";
 import {
   ITransaction,
   TransactionStatus,
@@ -10,97 +9,246 @@ import {
 } from "./transaction.interface";
 import { Transaction } from "./transaction.model";
 import httpStatus from "http-status-codes";
+import { pushTransactionToUser } from "../../utils/pushTransactionToUser";
 
 const createTransaction = async (
   transactionPayload: ITransaction,
-  session?: any
+  session?: ClientSession
 ) => {
-  const [transaction] = await Transaction.create([transactionPayload], {
-    session,
-  });
-  return transaction;
+  try {
+    const [transaction] = await Transaction.create([transactionPayload], {
+      new: true,
+      runValidators: true,
+      session,
+    });
+    return transaction;
+  } catch (error) {
+    throw new AppError(httpStatus.INTERNAL_SERVER_ERROR, "Transaction failed!");
+  }
 };
 
 const initialFunding = async (
-  userWallet: IWalletDocument,
+  updatedAdminWallet: IWallet,
+  updatedUserWallet: IWallet,
   initialFundingAmount: number,
-  session: any
+  session: ClientSession
 ) => {
-  const admin = await User.findOne({ email: process.env.ADMIN_EMAIL });
+  try {
+    const [adminTransaction, userTransaction] = await Promise.all([
+      createTransaction(
+        {
+          fromWalletId: updatedAdminWallet._id,
+          toWalletId: updatedUserWallet._id as Types.ObjectId,
+          amount: initialFundingAmount,
+          commission: 0,
+          status: TransactionStatus.approved,
+          type: TransactionType.cash_out,
+          currentBalance: updatedAdminWallet.balance,
+          initiatedBy: updatedAdminWallet.userId,
+          purpose: "Initial funding to new user",
+        },
+        session
+      ),
+      createTransaction(
+        {
+          fromWalletId: updatedAdminWallet._id,
+          toWalletId: updatedUserWallet._id as Types.ObjectId,
+          amount: initialFundingAmount,
+          commission: 0,
+          status: TransactionStatus.approved,
+          type: TransactionType.cash_in,
+          currentBalance: updatedUserWallet.balance,
+          initiatedBy: updatedUserWallet.userId,
+          purpose: "Initial admin funding",
+        },
+        session
+      ),
+    ]);
 
-  if (!admin) throw new AppError(httpStatus.NOT_FOUND, "Admin not found");
+    await pushTransactionToUser(
+      updatedAdminWallet.userId,
+      adminTransaction._id,
+      session
+    );
 
-  const adminWallet = await Wallet.findOne({ userId: admin._id });
+    const user = await User.findByIdAndUpdate(
+      updatedUserWallet.userId,
+      { $push: { transactionId: userTransaction._id } },
+      { new: true, runValidators: true, session }
+    )
+      .populate("walletId", "balance")
+      .populate("transactionId", "fromWalletId type")
+      .select("-password");
 
-  if (!adminWallet)
-    throw new AppError(httpStatus.NOT_FOUND, "Admin wallet not found");
-
-  if (adminWallet.balance < initialFundingAmount) {
+    return user;
+  } catch (error) {
     throw new AppError(
-      httpStatus.FORBIDDEN,
-      "Admin wallet has insufficient balance"
+      httpStatus.INTERNAL_SERVER_ERROR,
+      "Initial Funding failed!"
     );
   }
+};
 
-  if (!userWallet) {
-    throw new AppError(httpStatus.BAD_REQUEST, "User wallet not found");
+const addMoney = async (
+  wallet: IWallet,
+  amount: number,
+  session: ClientSession
+) => {
+  try {
+    const addMoneyTransaction = await createTransaction(
+      {
+        toWalletId: wallet._id as Types.ObjectId,
+        amount: amount,
+        status: TransactionStatus.approved,
+        type: TransactionType.add_money,
+        currentBalance: wallet.balance,
+        initiatedBy: wallet.userId,
+        purpose: "Self",
+      },
+      session
+    );
+
+    await pushTransactionToUser(
+      wallet.userId,
+      addMoneyTransaction._id,
+      session
+    );
+
+    return addMoneyTransaction;
+  } catch (error) {
+    throw new AppError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      "Add Money Transaction failed!"
+    );
   }
+};
 
-  adminWallet.balance -= initialFundingAmount;
-  userWallet.balance += initialFundingAmount;
+const cashIn = async (
+  agentWallet: IWallet,
+  userWallet: IWallet,
+  amount: number,
+  session: ClientSession
+) => {
+  try {
+    const [cashIn, receiveMoney] = await Promise.all([
+      createTransaction(
+        {
+          fromWalletId: agentWallet._id,
+          toWalletId: userWallet._id as Types.ObjectId,
+          amount: amount,
+          status: TransactionStatus.approved,
+          type: TransactionType.cash_in,
+          currentBalance: agentWallet.balance,
+          initiatedBy: agentWallet.userId,
+        },
+        session
+      ),
+      createTransaction(
+        {
+          fromWalletId: agentWallet._id,
+          toWalletId: userWallet._id as Types.ObjectId,
+          amount: amount,
+          status: TransactionStatus.approved,
+          type: TransactionType.receive_money,
+          currentBalance: userWallet.balance,
+          initiatedBy: userWallet.userId,
+        },
+        session
+      ),
+    ]);
 
-  await Promise.all([
-    adminWallet.save({ session }),
-    userWallet.save({ session }),
-  ]);
+    await Promise.all([
+      pushTransactionToUser(agentWallet.userId, cashIn._id, session),
+      pushTransactionToUser(userWallet.userId, receiveMoney._id, session),
+    ]);
 
-  const sharedTransactionPayload = {
-    fromWalletId: adminWallet._id as Types.ObjectId,
-    toWalletId: userWallet._id as Types.ObjectId,
-    amount: initialFundingAmount,
-    commission: 0,
-    status: TransactionStatus.approved,
-  };
+    return cashIn;
+  } catch (error) {
+    throw new AppError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      "Add Money Transaction failed!"
+    );
+  }
+};
 
-  const adminTransactionPayload: ITransaction = {
-    ...sharedTransactionPayload,
-    type: TransactionType.cash_out,
-    currentBalance: adminWallet.balance,
-    initiatedBy: admin._id,
-    purpose: "Initial funding to new user",
-  };
+const cashOut = async (
+  userWallet: IWallet,
+  agentWallet: IWallet,
+  adminWallet: IWallet,
+  amount: number,
+  feeAmount: number,
+  session: ClientSession
+) => {
+  try {
+    const [cashOutTransaction, withdrawTransaction, feeTransaction] =
+      await Promise.all([
+        createTransaction(
+          {
+            fromWalletId: userWallet._id,
+            toWalletId: agentWallet._id as Types.ObjectId,
+            amount: amount,
+            fee: feeAmount,
+            status: TransactionStatus.approved,
+            type: TransactionType.cash_out,
+            currentBalance: userWallet.balance,
+            initiatedBy: agentWallet.userId,
+          },
+          session
+        ),
+        createTransaction(
+          {
+            fromWalletId: userWallet._id,
+            toWalletId: agentWallet._id as Types.ObjectId,
+            amount: amount,
+            status: TransactionStatus.approved,
+            type: TransactionType.withdraw,
+            currentBalance: agentWallet.balance,
+            initiatedBy: userWallet.userId,
+          },
+          session
+        ),
 
-  const userTransactionPayload: ITransaction = {
-    ...sharedTransactionPayload,
-    type: TransactionType.cash_in,
-    currentBalance: userWallet.balance,
-    initiatedBy: userWallet.userId,
-    purpose: "Initial admin funding",
-  };
+        createTransaction(
+          {
+            fromWalletId: userWallet._id,
+            toWalletId: adminWallet._id as Types.ObjectId,
+            amount: feeAmount,
+            status: TransactionStatus.approved,
+            type: TransactionType.fee,
+            currentBalance: adminWallet.balance,
+            initiatedBy: userWallet.userId,
+          },
+          session
+        ),
+      ]);
 
-  const [adminTransaction, userTransaction] = await Promise.all([
-    createTransaction(adminTransactionPayload, session),
-    createTransaction(userTransactionPayload, session),
-  ]);
+    await Promise.all([
+      pushTransactionToUser(
+        agentWallet.userId,
+        cashOutTransaction._id,
+        session
+      ),
+      pushTransactionToUser(
+        userWallet.userId,
+        withdrawTransaction._id,
+        session
+      ),
+      pushTransactionToUser(adminWallet.userId, feeTransaction._id, session),
+    ]);
 
-  await User.findByIdAndUpdate(
-    admin._id,
-    { $push: { transactionId: adminTransaction._id } },
-    { session }
-  );
-
-  const user = await User.findByIdAndUpdate(
-    userWallet.userId,
-    { $push: { transactionId: userTransaction._id } },
-    { new: true, runValidators: true, session }
-  )
-    .populate("walletId", "balance")
-    .populate("transactionId", "fromWalletId type")
-    .select("-password");
-
-  return user;
+    return cashOutTransaction;
+  } catch (error) {
+    throw new AppError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      "Cash Out Transaction failed!"
+    );
+  }
 };
 
 export const TransactionService = {
+  createTransaction,
   initialFunding,
+  addMoney,
+  cashIn,
+  cashOut,
 };

@@ -6,6 +6,8 @@ export enum TransactionType {
   send_money = "send_money",
   cash_in = "cash_in",
   cash_out = "cash_out",
+  receive_money = "receive_money",
+  fee = "fee",
 }
 
 export enum TransactionStatus {
@@ -19,11 +21,11 @@ export interface ITransaction {
   fromWalletId?: Types.ObjectId;
   toWalletId: Types.ObjectId;
   type: TransactionType;
-  status: TransactionStatus; 
+  status: TransactionStatus;
   amount: number;
-  fee?: number;         
+  fee?: number;
   commission?: number;
   currentBalance: number;
   initiatedBy: Types.ObjectId;
-  purpose?: string
+  purpose?: string;
 }

@@ -1,0 +1,12 @@
+import { Router } from "express";
+import { checkAuth } from "../../middlewares/checkAuth";
+import { Role } from "../user/user.interface";
+import { WalletController } from "./wallet.controller";
+
+const router = Router();
+
+router.post("/add-money", checkAuth(Role.user), WalletController.addMoney);
+router.post("/cash-in", checkAuth(Role.agent), WalletController.cashIn);
+router.post("/cash-out", checkAuth(Role.user), WalletController.cashOut);
+
+export const WalletRoutes = router;

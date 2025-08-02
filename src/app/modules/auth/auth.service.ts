@@ -2,13 +2,19 @@ import httpStatus from "http-status-codes";
 import AppError from "../../errorHelpers/AppError";
 import { IUser, Role } from "../user/user.interface";
 import { User } from "../user/user.model";
-import { createUserTokens } from "../../utils/userTokens";
+import {
+  createNewAccessTokenWithRefreshToken,
+  createUserTokens,
+} from "../../utils/userTokens";
 import bcryptjs from "bcryptjs";
 import { JwtPayload } from "jsonwebtoken";
 import { envVars } from "../../config/env";
 import { WalletService } from "../wallet/wallet.service";
 import { TransactionService } from "../transaction/transaction.service";
 import { Types } from "mongoose";
+import { getAdminWallet } from "../../utils/getAdminWallet";
+import { incrementWalletBalance } from "../../utils/incrementWalletBalance";
+import { IWallet } from "../wallet/wallet.interface";
 
 const register = async (payload: Partial<IUser>, role: Role) => {
   const session = await User.startSession();
@@ -40,6 +46,7 @@ const register = async (payload: Partial<IUser>, role: Role) => {
       userPayload.isApproved = false;
     } else if (role === Role.user) {
       userPayload.feeRate = Number(envVars.USER_FEE_RATE) || 20;
+      userPayload.isApproved = true;
     }
 
     const [user] = await User.create([userPayload], { session });
@@ -55,9 +62,29 @@ const register = async (payload: Partial<IUser>, role: Role) => {
       delete agentInfo.password;
       responseData = agentInfo;
     } else {
+      const initialFundingAmount = Number(envVars.USER_INITIAL_FUNDING_AMOUNT);
+      const adminWallet = await getAdminWallet(session);
+
+      if (adminWallet.balance < initialFundingAmount) {
+        throw new AppError(
+          httpStatus.FORBIDDEN,
+          "Admin wallet has insufficient balance"
+        );
+      }
+
+      const [updatedAdminWallet, updatedUserWallet] = await Promise.all([
+        incrementWalletBalance(adminWallet._id, -initialFundingAmount, session),
+        incrementWalletBalance(
+          userWallet._id as Types.ObjectId,
+          initialFundingAmount,
+          session
+        ),
+      ]);
+
       const updatedUser = await TransactionService.initialFunding(
-        userWallet,
-        Number(envVars.USER_INITIAL_FUNDING_AMOUNT),
+        updatedAdminWallet as IWallet,
+        updatedUserWallet as IWallet,
+        initialFundingAmount,
         session
       );
       responseData = updatedUser;
@@ -106,6 +133,25 @@ const credentialLogin = async (payload: Partial<IUser>) => {
   };
 };
 
+const getMe = async (userId: string) => {
+  const myInfo = await User.findById(userId)
+    .select("-password")
+    .populate("walletId", "balance status");
+  return {
+    data: myInfo,
+  };
+};
+
+const getNewAccessToken = async (refreshToken: string) => {
+  const newAccessToken = await createNewAccessTokenWithRefreshToken(
+    refreshToken
+  );
+
+  return {
+    accessToken: newAccessToken,
+  };
+};
+
 const changePassword = async (
   decodedToken: JwtPayload,
   oldPassword: string,
@@ -140,5 +186,7 @@ const changePassword = async (
 export const AuthService = {
   register,
   credentialLogin,
+  getMe,
+  getNewAccessToken,
   changePassword,
 };

@@ -5,6 +5,7 @@ import { setAuthCookie } from "../../utils/setCookies";
 import { AuthService } from "./auth.service";
 import httpStatus from "http-status-codes";
 import { JwtPayload } from "jsonwebtoken";
+import AppError from "../../errorHelpers/AppError";
 
 const credentialLogin = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -17,6 +18,43 @@ const credentialLogin = catchAsync(
       success: true,
       message: "User Login Successfully",
       data: loginInfo,
+    });
+  }
+);
+
+const getMe = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const decodedToken = req.user as JwtPayload;
+    const result = await AuthService.getMe(decodedToken.userId);
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Your Profile Retrieved Successfully",
+      data: result,
+    });
+  }
+);
+
+const getNewAccessToken = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const refreshToken = req.cookies.refreshToken;
+
+    if (!refreshToken) {
+      throw new AppError(httpStatus.BAD_REQUEST, "Refresh Token Not Found");
+    }
+
+    const tokenInfo = await AuthService.getNewAccessToken(
+      refreshToken as string
+    );
+
+    setAuthCookie(res, tokenInfo);
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "New Access Token Retried Successfully",
+      data: tokenInfo,
     });
   }
 );
@@ -67,6 +105,8 @@ const logout = catchAsync(
 
 export const AuthController = {
   credentialLogin,
+  getMe,
+  getNewAccessToken,
   changePassword,
   logout,
 };

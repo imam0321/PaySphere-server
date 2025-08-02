@@ -18,6 +18,7 @@ const registerAgent = catchAsync(
   }
 );
 
+
 export const AgentController = {
   registerAgent,
 };
