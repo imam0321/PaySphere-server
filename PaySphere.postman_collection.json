@@ -1,0 +1,800 @@
+{
+	"info": {
+		"_postman_id": "ac4a4b88-2263-47f7-afd0-a8fcf216ce37",
+		"name": "PaySphere",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "36909447"
+	},
+	"item": [
+		{
+			"name": "user",
+			"item": [
+				{
+					"name": "Register",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\": \"Imam\",\r\n    \"email\": \"imam@gmail.com\",\r\n    \"password\": \"imam@gmail.com1I\",\r\n    \"phone\": \"01700000005\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/user/register",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"user",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get All User",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authorization}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\": \"user\",\r\n    \"email\": \"user@gmail.com\",\r\n    \"password\": \"user@gmail.com1U\"\r\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/user",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"user"
+							],
+							"query": [
+								{
+									"key": "phone",
+									"value": "01700000000",
+									"disabled": true
+								},
+								{
+									"key": "searchTerm",
+									"value": "us",
+									"disabled": true
+								},
+								{
+									"key": "limit",
+									"value": "2",
+									"disabled": true
+								},
+								{
+									"key": "page",
+									"value": "1",
+									"disabled": true
+								},
+								{
+									"key": "sort",
+									"value": "name",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Single User Or Agent",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authorization}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\": \"rohim\",\r\n    \"email\": \"rohim@gmail.com\",\r\n    \"password\": \"rohim2@gmail.com1U\",\r\n    \"phone\": \"01900000001\"\r\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/user/688e833c4ceb5fa1a24bbecc",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"user",
+								"688e833c4ceb5fa1a24bbecc"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "auth",
+			"item": [
+				{
+					"name": "Login",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"user@gmail.com\",\r\n    \"password\": \"user@gmail.com1U\"\r\n    // \"email\": \"rohim@gmail.com\",\r\n    // \"password\": \"rohim2@gmail.com1U\"\r\n    // \"email\": \"admin@gmail.com\",\r\n    // \"password\": \"123456789\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Change Password",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authorization}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"oldPassword\": \"user@gmail.com1U\",\r\n    \"newPassword\": \"user@gmail.com\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/change-password",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"change-password"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authorization}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/logout",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"logout"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Refresh Token",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "",
+								"value": "",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    // \"email\": \"user@gmail.com\",\r\n    // \"password\": \"user@gmail.com1U\"\r\n    // \"email\": \"agent@gmail.com\",\r\n    // \"password\": \"agent@gmail.com1U\"\r\n    \"email\": \"admin@gmail.com\",\r\n    \"password\": \"12345678\"\r\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/refresh-token",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"refresh-token"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Me",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authorization}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\": \"user\",\r\n    \"email\": \"user@gmail.com\",\r\n    \"password\": \"user@gmail.com1U\"\r\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/me",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"me"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Agent",
+			"item": [
+				{
+					"name": "Register",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\": \"rohim\",\r\n    \"email\": \"rohim@gmail.com\",\r\n    \"password\": \"rohim2@gmail.com1U\",\r\n    \"phone\": \"01900000001\"\r\n    // \"name\": \"agent\",\r\n    // \"email\": \"agent@gmail.com\",\r\n    // \"password\": \"agenr2@gmail.com1U\",\r\n    // \"phone\": \"01900000008\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/agent/register",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"agent",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Agent Approve",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authorization}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"user@gmail.com\",\r\n    \"password\": \"user@gmail.com1U\"\r\n    // \"email\": \"rohim@gmail.com\",\r\n    // \"password\": \"rohim2@gmail.com1U\"\r\n    // \"email\": \"admin@gmail.com\",\r\n    // \"password\": \"123456789\"\r\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/agent/approve/688fa0ac5a613a6ba6d45876",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"agent",
+								"approve",
+								"688fa0ac5a613a6ba6d45876"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Agent Suspended",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authorization}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/agent/suspend/688e833c4ceb5fa1a24bbecc",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"agent",
+								"suspend",
+								"688e833c4ceb5fa1a24bbecc"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Agent",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authorization}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\": \"user\",\r\n    \"email\": \"user@gmail.com\",\r\n    \"password\": \"user@gmail.com1U\"\r\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/agent",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"agent"
+							],
+							"query": [
+								{
+									"key": "phone",
+									"value": "01900000001",
+									"disabled": true
+								},
+								{
+									"key": "searchTerm",
+									"value": "rohim",
+									"disabled": true
+								},
+								{
+									"key": "limit",
+									"value": "2",
+									"disabled": true
+								},
+								{
+									"key": "page",
+									"value": "1",
+									"disabled": true
+								},
+								{
+									"key": "sort",
+									"value": "name",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Wallet",
+			"item": [
+				{
+					"name": "Add Money",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authorization}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"amount\": 200\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/wallet/add-money",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"wallet",
+								"add-money"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Cash In",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authorization}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"userWalletId\": \"688e83124ceb5fa1a24bbebc\",\r\n    \"amount\": 50\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/wallet/cash-in",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"wallet",
+								"cash-in"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Cash Out",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authorization}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"agentWalletId\": \"688e833c4ceb5fa1a24bbece\",\r\n    \"amount\": 100\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/wallet/cash-out",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"wallet",
+								"cash-out"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Send Money",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authorization}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"walletId\": \"688f3470908f8a4eac2db1c0\",\r\n    \"amount\": 100\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/wallet/send",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"wallet",
+								"send"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Wallets",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authorization}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/wallet?status=active",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"wallet"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "3",
+									"disabled": true
+								},
+								{
+									"key": "limit",
+									"value": "1",
+									"disabled": true
+								},
+								{
+									"key": "status",
+									"value": "active"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Block Wallet",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authorization}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/wallet/block/688fa0ac5a613a6ba6d45879",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"wallet",
+								"block",
+								"688fa0ac5a613a6ba6d45879"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Unblock Wallet",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authorization}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/wallet/unblock/688fa0ac5a613a6ba6d45879",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"wallet",
+								"unblock",
+								"688fa0ac5a613a6ba6d45879"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Single Wallet",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authorization}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\": \"rohim\",\r\n    \"email\": \"rohim@gmail.com\",\r\n    \"password\": \"rohim2@gmail.com1U\",\r\n    \"phone\": \"01900000001\"\r\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/wallet/688e83124ceb5fa1a24bbebc",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"wallet",
+								"688e83124ceb5fa1a24bbebc"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Transaction",
+			"item": [
+				{
+					"name": "All Transaction",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authorization}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/transaction",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"transaction"
+							],
+							"query": [
+								{
+									"key": "type",
+									"value": "cash_out",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "My Transaction History",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authorization}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/transaction/my-transaction",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"transaction",
+								"my-transaction"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Single Transaction",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authorization}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/transaction/688f9a374fbb69bbe9dd5946",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"transaction",
+								"688f9a374fbb69bbe9dd5946"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "https://pay-sphere-server.vercel.app/api/v1",
+			"type": "string"
+		},
+		{
+			"key": "authorization",
+			"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODhmOTlmZTRmYmI2OWJiZTlkZDU5NDAiLCJlbWFpbCI6ImFkbWluQGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc1NDI0MjY5NiwiZXhwIjoxNzU0MzI5MDk2fQ.YbkJJeKKpYNPSAgAr218XCrPMOVmY3dn8nTAfPV49FA",
+			"type": "string"
+		}
+	]
+}

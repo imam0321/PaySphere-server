@@ -283,7 +283,7 @@ const getMyTransactionHistory = async (
   }
 
   const queryBuilder = new QueryBuilder(
-    Transaction.find({ _id: user.transactionId }),
+    Transaction.find({ _id: { $in: user.transactionId } }),
     query
   );
 

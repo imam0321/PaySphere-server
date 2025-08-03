@@ -23,9 +23,9 @@ const getAllTransaction = catchAsync(
 
 const getMyTransactionHistory = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { userId } = req.user as JwtPayload;
+    const decodedToken = req.user as JwtPayload;
     const result = await TransactionService.getMyTransactionHistory(
-      userId,
+      decodedToken.userId,
       req.query as Record<string, string>
     );
 
