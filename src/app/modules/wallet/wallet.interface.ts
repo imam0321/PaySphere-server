@@ -13,11 +13,3 @@ export interface IWallet {
   status: WalletStatus;
 }
 
-// export interface IWallet {
-//   userId: Types.ObjectId;
-//   balance: number;
-//   currency: "BDT";
-//   status: WalletStatus;
-// }
-
-// export interface IWalletDocument extends IWallet, Document {}

@@ -10,6 +10,9 @@ import {
 import { Transaction } from "./transaction.model";
 import httpStatus from "http-status-codes";
 import { pushTransactionToUser } from "../../utils/pushTransactionToUser";
+import { findUserAndWallet } from "../../utils/findUserAndWallet";
+import { Role } from "../user/user.interface";
+import { QueryBuilder } from "../../utils/QueryBuilder";
 
 const createTransaction = async (
   transactionPayload: ITransaction,
@@ -130,6 +133,7 @@ const cashIn = async (
   session: ClientSession
 ) => {
   try {
+    const { user } = await findUserAndWallet(userWallet.userId, session);
     const [cashIn, receiveMoney] = await Promise.all([
       createTransaction(
         {
@@ -137,7 +141,10 @@ const cashIn = async (
           toWalletId: userWallet._id as Types.ObjectId,
           amount: amount,
           status: TransactionStatus.approved,
-          type: TransactionType.cash_in,
+          type:
+            user.role === Role.agent
+              ? TransactionType.cash_in
+              : TransactionType.send_money,
           currentBalance: agentWallet.balance,
           initiatedBy: agentWallet.userId,
         },
@@ -245,10 +252,65 @@ const cashOut = async (
   }
 };
 
+const getAllTransaction = async (query: Record<string, string>) => {
+  const queryBuilder = new QueryBuilder(Transaction.find(), query);
+
+  const transactions = queryBuilder.filter().paginate();
+
+  const [data, meta] = await Promise.all([
+    transactions.build(),
+    queryBuilder.getMeta(),
+  ]);
+
+  return {
+    data,
+    meta,
+  };
+};
+
+const getMyTransactionHistory = async (
+  userId: string,
+  query: Record<string, string>
+) => {
+  const user = await User.findById(userId);
+
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, "User not found");
+  }
+
+  if (!user.transactionId || !Array.isArray(user.transactionId)) {
+    throw new AppError(httpStatus.NOT_FOUND, "Transaction Not Found");
+  }
+
+  const queryBuilder = new QueryBuilder(
+    Transaction.find({ _id: user.transactionId }),
+    query
+  );
+
+  const transactions = queryBuilder.filter().sort().paginate();
+
+  const [data, meta] = await Promise.all([
+    transactions.build(),
+    queryBuilder.getMeta(),
+  ]);
+
+  return {
+    data,
+    meta,
+  };
+};
+
+const getSingleTransaction = async (id: string) => {
+  return await Transaction.findById(id).populate("initiatedBy", "name role");
+};
+
 export const TransactionService = {
   createTransaction,
   initialFunding,
   addMoney,
   cashIn,
   cashOut,
+  getAllTransaction,
+  getMyTransactionHistory,
+  getSingleTransaction
 };

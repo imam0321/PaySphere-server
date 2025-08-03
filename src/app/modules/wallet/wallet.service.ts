@@ -7,6 +7,8 @@ import { TransactionService } from "../transaction/transaction.service";
 import { findUserAndWallet } from "../../utils/findUserAndWallet";
 import { getAdminWallet } from "../../utils/getAdminWallet";
 import { incrementWalletBalance } from "../../utils/incrementWalletBalance";
+import { Role } from "../user/user.interface";
+import { QueryBuilder } from "../../utils/QueryBuilder";
 
 const createWallet = async (
   userId: Types.ObjectId,
@@ -70,7 +72,71 @@ const addMoney = async (userId: string, amount: number) => {
   }
 };
 
-// TODO: Agent isApproved
+const sendMoney = async (
+  userId: string,
+  sendWalletId: string,
+  amount: number
+) => {
+  const session = await Wallet.startSession();
+  session.startTransaction();
+  try {
+    const { user, wallet } = await findUserAndWallet(userId, session);
+
+    if (wallet.status === WalletStatus.blocked) {
+      throw new AppError(httpStatus.FORBIDDEN, "Your wallet is Blocked");
+    }
+
+    const sendToWallet = await Wallet.findById(sendWalletId).session(session);
+
+    if (!sendToWallet)
+      throw new AppError(httpStatus.NOT_FOUND, "Wallet not found");
+
+    if (sendToWallet.status === WalletStatus.blocked) {
+      throw new AppError(httpStatus.FORBIDDEN, "Send Wallet is Blocked");
+    }
+
+    const { user: sendUser } = await findUserAndWallet(
+      sendToWallet.userId,
+      session
+    );
+    if (user.role !== Role.user && sendUser.role !== Role.user) {
+      throw new AppError(
+        httpStatus.NOT_FOUND,
+        "Invalid wallet to send!, Both of them must be user"
+      );
+    }
+
+    if (wallet._id === sendToWallet.id)
+      throw new AppError(httpStatus.NOT_FOUND, "Invalid wallet id to send!");
+
+    if (wallet.balance < amount)
+      throw new AppError(
+        httpStatus.NOT_FOUND,
+        "wallet has insufficient balance"
+      );
+
+    const [updatedSendFromWallet, updatedSendToWallet] = await Promise.all([
+      incrementWalletBalance(wallet._id, -amount, session),
+      incrementWalletBalance(sendToWallet._id, amount, session),
+    ]);
+
+    const transaction = await TransactionService.cashIn(
+      updatedSendFromWallet as IWallet,
+      updatedSendToWallet as IWallet,
+      amount,
+      session
+    );
+
+    await session.commitTransaction();
+    session.endSession();
+    return transaction;
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    throw error;
+  }
+};
+
 const cashIn = async (
   agentId: string,
   userWalletId: string,
@@ -79,11 +145,26 @@ const cashIn = async (
   const session = await Wallet.startSession();
   session.startTransaction();
   try {
-    const { wallet: agentWallet } = await findUserAndWallet(agentId, session);
+    const { user: agent, wallet: agentWallet } = await findUserAndWallet(
+      agentId,
+      session
+    );
+
+    if (agentWallet.status === WalletStatus.blocked) {
+      throw new AppError(httpStatus.FORBIDDEN, "Agent wallet is Blocked");
+    }
+
+    if (agent.isApproved === false) {
+      throw new AppError(httpStatus.FORBIDDEN, "Agent not approved");
+    }
 
     const userWallet = await Wallet.findById(userWalletId).session(session);
     if (!userWallet)
       throw new AppError(httpStatus.NOT_FOUND, "User wallet not found");
+
+    if (userWallet.status === WalletStatus.blocked) {
+      throw new AppError(httpStatus.FORBIDDEN, "User wallet is Blocked");
+    }
 
     if (agentWallet.balance < amount)
       throw new AppError(
@@ -127,9 +208,17 @@ const cashOut = async (
       session
     );
 
+    if (userWallet.status === WalletStatus.blocked) {
+      throw new AppError(httpStatus.FORBIDDEN, "Your wallet is Blocked");
+    }
+
     const agentWallet = await Wallet.findById(agentWalletId).session(session);
     if (!agentWallet)
       throw new AppError(httpStatus.NOT_FOUND, "Agent wallet not found");
+
+    if (agentWallet.status === WalletStatus.blocked) {
+      throw new AppError(httpStatus.FORBIDDEN, "Agent wallet is Blocked");
+    }
 
     const feeRate = user.feeRate as number;
     const feeAmount = (feeRate / 1000) * amount;
@@ -169,9 +258,73 @@ const cashOut = async (
   }
 };
 
+const getAllWallet = async (query: Record<string, string>) => {
+  const queryBuilder = new QueryBuilder(
+    Wallet.find().populate("userId", "role"),
+    query
+  );
+
+  const wallets = queryBuilder.filter().paginate();
+
+  const [data, meta] = await Promise.all([
+    wallets.build(),
+    queryBuilder.getMeta(),
+  ]);
+
+  return {
+    data,
+    meta,
+  };
+};
+
+const getSingleWallet = async (id: string) => {
+  return await Wallet.findById(id).populate("userId", "name role");
+};
+
+const block = async (walletId: string) => {
+  const wallet = await Wallet.findById(walletId);
+
+  if (!wallet) throw new AppError(httpStatus.NOT_FOUND, "Wallet not found");
+  if (wallet.status === WalletStatus.blocked)
+    throw new AppError(httpStatus.BAD_REQUEST, "Wallet already Blocked");
+
+  const updateWallet = await Wallet.findByIdAndUpdate(
+    wallet._id,
+    {
+      status: WalletStatus.blocked,
+    },
+    { new: true, runValidators: true }
+  );
+
+  return updateWallet;
+};
+
+const unblock = async (walletId: string) => {
+  const wallet = await Wallet.findById(walletId);
+
+  if (!wallet) throw new AppError(httpStatus.NOT_FOUND, "Wallet not found");
+  if (wallet.status !== WalletStatus.blocked)
+    throw new AppError(httpStatus.BAD_REQUEST, "Wallet already Unblocked");
+
+  const updateWallet = await Wallet.findByIdAndUpdate(
+    wallet._id,
+    {
+      status: WalletStatus.active,
+    },
+    { new: true, runValidators: true }
+  );
+
+  return updateWallet;
+};
+
 export const WalletService = {
   createWallet,
   addMoney,
+  sendMoney,
   cashIn,
   cashOut,
+  getAllWallet,
+  getSingleWallet,
+  block,
+  unblock,
 };

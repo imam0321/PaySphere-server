@@ -55,44 +55,43 @@ const register = async (payload: Partial<IUser>, role: Role) => {
     user.walletId = userWallet._id as Types.ObjectId;
     await user.save({ session });
 
-    let responseData;
+    // let responseData;
 
-    if (role === Role.agent) {
-      const agentInfo = user.toObject();
-      delete agentInfo.password;
-      responseData = agentInfo;
-    } else {
-      const initialFundingAmount = Number(envVars.USER_INITIAL_FUNDING_AMOUNT);
-      const adminWallet = await getAdminWallet(session);
+    // if (role === Role.agent) {
+    //   const agentInfo = user.toObject();
+    //   delete agentInfo.password;
+    //   responseData = agentInfo;
+    // }
 
-      if (adminWallet.balance < initialFundingAmount) {
-        throw new AppError(
-          httpStatus.FORBIDDEN,
-          "Admin wallet has insufficient balance"
-        );
-      }
+    const initialFundingAmount = Number(envVars.USER_INITIAL_FUNDING_AMOUNT);
+    const adminWallet = await getAdminWallet(session);
 
-      const [updatedAdminWallet, updatedUserWallet] = await Promise.all([
-        incrementWalletBalance(adminWallet._id, -initialFundingAmount, session),
-        incrementWalletBalance(
-          userWallet._id as Types.ObjectId,
-          initialFundingAmount,
-          session
-        ),
-      ]);
+    if (adminWallet.balance < initialFundingAmount) {
+      throw new AppError(
+        httpStatus.FORBIDDEN,
+        "Admin wallet has insufficient balance"
+      );
+    }
 
-      const updatedUser = await TransactionService.initialFunding(
-        updatedAdminWallet as IWallet,
-        updatedUserWallet as IWallet,
+    const [updatedAdminWallet, updatedUserWallet] = await Promise.all([
+      incrementWalletBalance(adminWallet._id, -initialFundingAmount, session),
+      incrementWalletBalance(
+        userWallet._id as Types.ObjectId,
         initialFundingAmount,
         session
-      );
-      responseData = updatedUser;
-    }
+      ),
+    ]);
+
+    const updatedUser = await TransactionService.initialFunding(
+      updatedAdminWallet as IWallet,
+      updatedUserWallet as IWallet,
+      initialFundingAmount,
+      session
+    );
 
     await session.commitTransaction();
     session.endSession();
-    return { data: responseData };
+    return { data: updatedUser };
   } catch (error: any) {
     await session.abortTransaction();
     session.endSession();
