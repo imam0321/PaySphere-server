@@ -268,6 +268,38 @@ const getAllTransaction = async (query: Record<string, string>) => {
   };
 };
 
+const getMyTransactionHistory = async (
+  userId: string,
+  query: Record<string, string>
+) => {
+  const user = await User.findById(userId);
+
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, "User not found");
+  }
+
+  if (!user.transactionId || !Array.isArray(user.transactionId)) {
+    throw new AppError(httpStatus.NOT_FOUND, "Transaction Not Found");
+  }
+
+  const queryBuilder = new QueryBuilder(
+    Transaction.find({ _id: user.transactionId }),
+    query
+  );
+
+  const transactions = queryBuilder.filter().sort().paginate();
+
+  const [data, meta] = await Promise.all([
+    transactions.build(),
+    queryBuilder.getMeta(),
+  ]);
+
+  return {
+    data,
+    meta,
+  };
+};
+
 export const TransactionService = {
   createTransaction,
   initialFunding,
@@ -275,4 +307,5 @@ export const TransactionService = {
   cashIn,
   cashOut,
   getAllTransaction,
+  getMyTransactionHistory,
 };

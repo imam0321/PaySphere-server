@@ -6,5 +6,10 @@ import { TransactionController } from "./transaction.controller";
 const router = Router();
 
 router.get("/", checkAuth(Role.admin), TransactionController.getAllTransaction);
+router.get(
+  "/my-transaction",
+  checkAuth(...Object.values(Role)),
+  TransactionController.getMyTransactionHistory
+);
 
 export const TransactionRoutes = router;

@@ -3,6 +3,7 @@ import { sendResponse } from "../../utils/sendResponse";
 import httpStatus from "http-status-codes";
 import catchAsync from "../../utils/catchAsync";
 import { TransactionService } from "./transaction.service";
+import { JwtPayload } from "jsonwebtoken";
 
 const getAllTransaction = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -20,6 +21,22 @@ const getAllTransaction = catchAsync(
   }
 );
 
+const getMyTransactionHistory = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const {userId} = req.user as JwtPayload
+    const result = await TransactionService.getMyTransactionHistory(userId, req.query as Record<string, string>);
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "My all transactions retrieved successfully",
+      data: result.data,
+      meta: result.meta,
+    });
+  }
+);
+
 export const TransactionController = {
   getAllTransaction,
+  getMyTransactionHistory
 };
