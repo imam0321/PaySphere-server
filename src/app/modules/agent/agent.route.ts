@@ -12,5 +12,7 @@ router.post(
   validateRequest(createUserZodSchema),
   AgentController.registerAgent
 );
+router.post("/approve/:id", checkAuth(Role.admin), AgentController.approve);
+router.post("/suspend/:id", checkAuth(Role.admin), AgentController.suspend);
 
 export const AgentRoutes = router;

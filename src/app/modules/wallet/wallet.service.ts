@@ -136,7 +136,6 @@ const sendMoney = async (
   }
 };
 
-// TODO: Agent isApproved
 const cashIn = async (
   agentId: string,
   userWalletId: string,
@@ -145,10 +144,17 @@ const cashIn = async (
   const session = await Wallet.startSession();
   session.startTransaction();
   try {
-    const { wallet: agentWallet } = await findUserAndWallet(agentId, session);
+    const { user: agent, wallet: agentWallet } = await findUserAndWallet(
+      agentId,
+      session
+    );
 
     if (agentWallet.status === WalletStatus.blocked) {
       throw new AppError(httpStatus.FORBIDDEN, "Agent wallet is Blocked");
+    }
+
+    if (agent.isApproved === false) {
+      throw new AppError(httpStatus.FORBIDDEN, "Agent not approved");
     }
 
     const userWallet = await Wallet.findById(userWalletId).session(session);
