@@ -300,6 +300,10 @@ const getMyTransactionHistory = async (
   };
 };
 
+const getSingleTransaction = async (id: string) => {
+  return await Transaction.findById(id).populate("initiatedBy", "name role");
+};
+
 export const TransactionService = {
   createTransaction,
   initialFunding,
@@ -308,4 +312,5 @@ export const TransactionService = {
   cashOut,
   getAllTransaction,
   getMyTransactionHistory,
+  getSingleTransaction
 };

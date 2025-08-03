@@ -23,8 +23,11 @@ const getAllTransaction = catchAsync(
 
 const getMyTransactionHistory = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const {userId} = req.user as JwtPayload
-    const result = await TransactionService.getMyTransactionHistory(userId, req.query as Record<string, string>);
+    const { userId } = req.user as JwtPayload;
+    const result = await TransactionService.getMyTransactionHistory(
+      userId,
+      req.query as Record<string, string>
+    );
 
     sendResponse(res, {
       statusCode: httpStatus.OK,
@@ -36,7 +39,21 @@ const getMyTransactionHistory = catchAsync(
   }
 );
 
+const getSingleTransaction = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const result = await TransactionService.getSingleTransaction(req.params.id);
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Single transactions retrieved successfully",
+      data: result,
+    });
+  }
+);
+
 export const TransactionController = {
   getAllTransaction,
-  getMyTransactionHistory
+  getMyTransactionHistory,
+  getSingleTransaction,
 };

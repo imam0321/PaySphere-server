@@ -277,6 +277,10 @@ const getAllWallet = async (query: Record<string, string>) => {
   };
 };
 
+const getSingleWallet = async (id: string) => {
+  return await Wallet.findById(id).populate("userId", "name role");
+};
+
 const block = async (walletId: string) => {
   const wallet = await Wallet.findById(walletId);
 
@@ -320,6 +324,7 @@ export const WalletService = {
   cashIn,
   cashOut,
   getAllWallet,
+  getSingleWallet,
   block,
   unblock,
 };

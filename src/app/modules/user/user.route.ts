@@ -13,5 +13,6 @@ router.post(
   UserController.registerUser
 );
 router.get("/", checkAuth(Role.admin), UserController.getAllUser);
+router.get("/:id", checkAuth(Role.admin), UserController.getSingleUserOrAgent);
 
 export const UserRoutes = router;

@@ -26,6 +26,11 @@ const getAllUser = async (query: Record<string, string>) => {
   };
 };
 
+const getSingleUserOrAgent = async (id:string) => {
+  return await User.findById(id).select("-password")
+}
+
 export const UserService = {
   getAllUser,
+  getSingleUserOrAgent
 };

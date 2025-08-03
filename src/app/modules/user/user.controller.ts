@@ -36,7 +36,21 @@ const getAllUser = catchAsync(
   }
 );
 
+const getSingleUserOrAgent = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const result = await UserService.getSingleUserOrAgent(req.params.id);
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: `${result?.role} retrieved successfully`,
+      data: result,
+    });
+  }
+);
+
 export const UserController = {
   registerUser,
   getAllUser,
+  getSingleUserOrAgent
 };
