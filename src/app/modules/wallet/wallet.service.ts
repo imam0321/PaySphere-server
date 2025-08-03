@@ -7,6 +7,7 @@ import { TransactionService } from "../transaction/transaction.service";
 import { findUserAndWallet } from "../../utils/findUserAndWallet";
 import { getAdminWallet } from "../../utils/getAdminWallet";
 import { incrementWalletBalance } from "../../utils/incrementWalletBalance";
+import { Role } from "../user/user.interface";
 
 const createWallet = async (
   userId: Types.ObjectId,
@@ -70,6 +71,63 @@ const addMoney = async (userId: string, amount: number) => {
   }
 };
 
+const sendMoney = async (
+  userId: string,
+  sendWalletId: string,
+  amount: number
+) => {
+  const session = await Wallet.startSession();
+  session.startTransaction();
+  try {
+    const { user, wallet } = await findUserAndWallet(userId, session);
+
+    const sendToWallet = await Wallet.findById(sendWalletId).session(session);
+
+    if (!sendToWallet)
+      throw new AppError(httpStatus.NOT_FOUND, "Send wallet wallet not found");
+
+    const { user: sendUser } = await findUserAndWallet(
+      sendToWallet.userId,
+      session
+    );
+    if (user.role !== Role.user && sendUser.role !== Role.user) {
+      throw new AppError(
+        httpStatus.NOT_FOUND,
+        "Invalid wallet to send!, Both of them must be user"
+      );
+    }
+
+    if (wallet._id === sendToWallet.id)
+      throw new AppError(httpStatus.NOT_FOUND, "Invalid wallet id to send!");
+
+    if (wallet.balance < amount)
+      throw new AppError(
+        httpStatus.NOT_FOUND,
+        "wallet has insufficient balance"
+      );
+
+    const [updatedSendFromWallet, updatedSendToWallet] = await Promise.all([
+      incrementWalletBalance(wallet._id, -amount, session),
+      incrementWalletBalance(sendToWallet._id, amount, session),
+    ]);
+
+    const transaction = await TransactionService.cashIn(
+      updatedSendFromWallet as IWallet,
+      updatedSendToWallet as IWallet,
+      amount,
+      session
+    );
+
+    await session.commitTransaction();
+    session.endSession();
+    return transaction;
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    throw error;
+  }
+};
+
 // TODO: Agent isApproved
 const cashIn = async (
   agentId: string,
@@ -84,7 +142,7 @@ const cashIn = async (
     const userWallet = await Wallet.findById(userWalletId).session(session);
     if (!userWallet)
       throw new AppError(httpStatus.NOT_FOUND, "User wallet not found");
-
+    
     if (agentWallet.balance < amount)
       throw new AppError(
         httpStatus.NOT_FOUND,
@@ -172,6 +230,7 @@ const cashOut = async (
 export const WalletService = {
   createWallet,
   addMoney,
+  sendMoney,
   cashIn,
   cashOut,
 };

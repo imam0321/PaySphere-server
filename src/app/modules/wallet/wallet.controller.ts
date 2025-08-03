@@ -19,9 +19,24 @@ const addMoney = catchAsync(
   }
 );
 
+const sendMoney = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { userId } = req.user as JwtPayload;
+    const { walletId, amount } = req.body;
+    const result = await WalletService.sendMoney(userId, walletId, amount);
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Send Money Successfully",
+      data: result,
+    });
+  }
+);
+
 const cashIn = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const {userId: agentId} = req.user as JwtPayload;
+    const { userId: agentId } = req.user as JwtPayload;
     const { userWalletId, amount } = req.body;
     const result = await WalletService.cashIn(agentId, userWalletId, amount);
 
@@ -36,7 +51,7 @@ const cashIn = catchAsync(
 
 const cashOut = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const {userId} = req.user as JwtPayload;
+    const { userId } = req.user as JwtPayload;
     const { agentWalletId, amount } = req.body;
     const result = await WalletService.cashOut(userId, agentWalletId, amount);
 
@@ -51,6 +66,7 @@ const cashOut = catchAsync(
 
 export const WalletController = {
   addMoney,
+  sendMoney,
   cashIn,
-  cashOut
+  cashOut,
 };

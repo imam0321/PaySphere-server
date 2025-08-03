@@ -10,6 +10,8 @@ import {
 import { Transaction } from "./transaction.model";
 import httpStatus from "http-status-codes";
 import { pushTransactionToUser } from "../../utils/pushTransactionToUser";
+import { findUserAndWallet } from "../../utils/findUserAndWallet";
+import { Role } from "../user/user.interface";
 
 const createTransaction = async (
   transactionPayload: ITransaction,
@@ -130,6 +132,7 @@ const cashIn = async (
   session: ClientSession
 ) => {
   try {
+    const { user } = await findUserAndWallet(userWallet.userId, session);
     const [cashIn, receiveMoney] = await Promise.all([
       createTransaction(
         {
@@ -137,7 +140,10 @@ const cashIn = async (
           toWalletId: userWallet._id as Types.ObjectId,
           amount: amount,
           status: TransactionStatus.approved,
-          type: TransactionType.cash_in,
+          type:
+            user.role === Role.agent
+              ? TransactionType.cash_in
+              : TransactionType.send_money,
           currentBalance: agentWallet.balance,
           initiatedBy: agentWallet.userId,
         },

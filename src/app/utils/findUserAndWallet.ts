@@ -1,11 +1,11 @@
-import { ClientSession } from "mongoose";
+import { ClientSession, Types } from "mongoose";
 import { User } from "../modules/user/user.model";
 import AppError from "../errorHelpers/AppError";
 import { Wallet } from "../modules/wallet/wallet.model";
 import httpStatus from "http-status-codes";
 
 export const findUserAndWallet = async (
-  userId: string,
+  userId: string | Types.ObjectId,
   session: ClientSession
 ) => {
   try {
