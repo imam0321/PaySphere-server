@@ -8,6 +8,7 @@ import { findUserAndWallet } from "../../utils/findUserAndWallet";
 import { getAdminWallet } from "../../utils/getAdminWallet";
 import { incrementWalletBalance } from "../../utils/incrementWalletBalance";
 import { Role } from "../user/user.interface";
+import { QueryBuilder } from "../../utils/QueryBuilder";
 
 const createWallet = async (
   userId: Types.ObjectId,
@@ -257,6 +258,25 @@ const cashOut = async (
   }
 };
 
+const getAllWallet = async (query: Record<string, string>) => {
+  const queryBuilder = new QueryBuilder(
+    Wallet.find().populate("userId", "role"),
+    query
+  );
+
+  const wallets = queryBuilder.filter().paginate();
+
+  const [data, meta] = await Promise.all([
+    wallets.build(),
+    queryBuilder.getMeta(),
+  ]);
+
+  return {
+    data,
+    meta,
+  };
+};
+
 const block = async (walletId: string) => {
   const wallet = await Wallet.findById(walletId);
 
@@ -299,6 +319,7 @@ export const WalletService = {
   sendMoney,
   cashIn,
   cashOut,
+  getAllWallet,
   block,
   unblock,
 };

@@ -12,6 +12,7 @@ import httpStatus from "http-status-codes";
 import { pushTransactionToUser } from "../../utils/pushTransactionToUser";
 import { findUserAndWallet } from "../../utils/findUserAndWallet";
 import { Role } from "../user/user.interface";
+import { QueryBuilder } from "../../utils/QueryBuilder";
 
 const createTransaction = async (
   transactionPayload: ITransaction,
@@ -251,10 +252,27 @@ const cashOut = async (
   }
 };
 
+const getAllTransaction = async (query: Record<string, string>) => {
+  const queryBuilder = new QueryBuilder(Transaction.find(), query);
+
+  const transactions = queryBuilder.filter().paginate();
+
+  const [data, meta] = await Promise.all([
+    transactions.build(),
+    queryBuilder.getMeta(),
+  ]);
+
+  return {
+    data,
+    meta,
+  };
+};
+
 export const TransactionService = {
   createTransaction,
   initialFunding,
   addMoney,
   cashIn,
   cashOut,
+  getAllTransaction,
 };

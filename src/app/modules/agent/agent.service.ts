@@ -1,7 +1,29 @@
 import AppError from "../../errorHelpers/AppError";
+import { QueryBuilder } from "../../utils/QueryBuilder";
+import { UserSearchableFields } from "../user/user.constant";
 import { Role } from "../user/user.interface";
 import { User } from "../user/user.model";
 import httpStatus from "http-status-codes";
+
+const getAllAgent = async (query: Record<string, string>) => {
+  const queryBuilder = new QueryBuilder(User.find({role: Role.agent}).select("-password"), query);
+  
+    const agents = queryBuilder
+      .search(UserSearchableFields)
+      .sort()
+      .filter()
+      .paginate();
+  
+    const [data, meta] = await Promise.all([
+      agents.build(),
+      queryBuilder.getMeta(),
+    ]);
+  
+    return {
+      data,
+      meta,
+    };
+};
 
 const approve = async (agentId: string) => {
   const agent = await User.findById(agentId);
@@ -50,6 +72,7 @@ const suspend = async (agentId: string) => {
 };
 
 export const AgentService = {
+  getAllAgent,
   approve,
   suspend,
 };

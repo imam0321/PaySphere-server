@@ -19,6 +19,21 @@ const registerAgent = catchAsync(
   }
 );
 
+const getAllAgent = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const result = await AgentService.getAllAgent(
+      req.query as Record<string, string>
+    );
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "All Agent retrieved successfully",
+      data: result,
+    });
+  }
+);
+
 const approve = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
@@ -49,6 +64,7 @@ const suspend = catchAsync(
 
 export const AgentController = {
   registerAgent,
+  getAllAgent,
   approve,
   suspend,
 };

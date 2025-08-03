@@ -5,6 +5,7 @@ import { sendResponse } from "../../utils/sendResponse";
 import httpStatus from "http-status-codes";
 import { Role } from "./user.interface";
 import { AuthService } from "../auth/auth.service";
+import { UserService } from "./user.service";
 
 const registerUser = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -19,6 +20,23 @@ const registerUser = catchAsync(
   }
 );
 
+const getAllUser = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const result = await UserService.getAllUser(
+      req.query as Record<string, string>
+    );
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "All Users retrieved successfully",
+      data: result.data,
+      meta: result.meta,
+    });
+  }
+);
+
 export const UserController = {
   registerUser,
+  getAllUser,
 };

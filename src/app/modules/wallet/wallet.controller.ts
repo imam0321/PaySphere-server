@@ -64,6 +64,22 @@ const cashOut = catchAsync(
   }
 );
 
+const getAllWallet = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const result = await WalletService.getAllWallet(
+      req.query as Record<string, string>
+    );
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "All Wallets retrieved successfully",
+      data: result.data,
+      meta: result.meta,
+    });
+  }
+);
+
 const block = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { walletId } = req.params;
@@ -97,6 +113,7 @@ export const WalletController = {
   sendMoney,
   cashIn,
   cashOut,
+  getAllWallet,
   block,
   unblock,
 };
