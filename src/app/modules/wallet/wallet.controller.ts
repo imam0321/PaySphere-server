@@ -64,9 +64,39 @@ const cashOut = catchAsync(
   }
 );
 
+const block = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { walletId } = req.params;
+    const result = await WalletService.block(walletId);
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Wallet Block Successfully",
+      data: result,
+    });
+  }
+);
+
+const unblock = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { walletId } = req.params;
+    const result = await WalletService.unblock(walletId);
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Wallet Unblock Successfully",
+      data: result,
+    });
+  }
+);
+
 export const WalletController = {
   addMoney,
   sendMoney,
   cashIn,
   cashOut,
+  block,
+  unblock,
 };
