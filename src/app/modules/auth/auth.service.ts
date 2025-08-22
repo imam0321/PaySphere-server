@@ -21,11 +21,16 @@ const register = async (payload: Partial<IUser>, role: Role) => {
   session.startTransaction();
 
   try {
-    const { email, password, ...rest } = payload;
+    const { email, password, phone, ...rest } = payload;
 
     const isUserExist = await User.findOne({ email });
     if (isUserExist) {
       throw new AppError(httpStatus.BAD_REQUEST, "User already Exist!");
+    }
+
+    const isPhoneExist = await User.findOne({ phone });
+    if (isPhoneExist) {
+      throw new AppError(httpStatus.BAD_REQUEST, "Phone number already Exist!");
     }
 
     const hashedPassword = await bcryptjs.hash(
@@ -36,6 +41,7 @@ const register = async (payload: Partial<IUser>, role: Role) => {
     const userPayload: Partial<IUser> = {
       email,
       password: hashedPassword,
+      phone,
       role,
       ...rest,
     };
@@ -91,7 +97,7 @@ const register = async (payload: Partial<IUser>, role: Role) => {
 
     await session.commitTransaction();
     session.endSession();
-    return { data: updatedUser };
+    return updatedUser;
   } catch (error: any) {
     await session.abortTransaction();
     session.endSession();
