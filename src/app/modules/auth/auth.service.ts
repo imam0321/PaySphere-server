@@ -141,10 +141,8 @@ const credentialLogin = async (payload: Partial<IUser>) => {
 const getMe = async (userId: string) => {
   const myInfo = await User.findById(userId)
     .select("-password")
-    .populate("walletId", "balance status");
-  return {
-    data: myInfo,
-  };
+    .populate("walletId", "balance status")
+  return myInfo;
 };
 
 const getNewAccessToken = async (refreshToken: string) => {

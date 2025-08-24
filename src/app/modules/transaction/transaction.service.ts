@@ -1,4 +1,4 @@
-import { ClientSession, Types } from "mongoose";
+import mongoose, { ClientSession, Types } from "mongoose";
 import AppError from "../../errorHelpers/AppError";
 import { User } from "../user/user.model";
 import { IWallet } from "../wallet/wallet.interface";
@@ -268,40 +268,32 @@ const getAllTransaction = async (query: Record<string, string>) => {
   };
 };
 
-const getMyTransactionHistory = async (
-  userId: string,
-  query: Record<string, string>
-) => {
+
+
+const getMyTransactionHistory = async (userId: string,) => {
   const user = await User.findById(userId);
 
   if (!user) {
     throw new AppError(httpStatus.NOT_FOUND, "User not found");
   }
 
-  if (!user.transactionId || !Array.isArray(user.transactionId)) {
+  if (!user.transactionId || !Array.isArray(user.transactionId) || user.transactionId.length === 0) {
     throw new AppError(httpStatus.NOT_FOUND, "Transaction Not Found");
   }
 
-  const queryBuilder = new QueryBuilder(
-    Transaction.find({ _id: { $in: user.transactionId } }),
-    query
-  );
+  // transactionId gulo ObjectId te convert
+  const transactionObjectIds = user.transactionId.map(id => new mongoose.Types.ObjectId(id));
 
-  const transactions = queryBuilder.filter().sort().paginate();
+  const data = await Transaction.find({
+    _id: { $in: transactionObjectIds }
+  });
 
-  const [data, meta] = await Promise.all([
-    transactions.build(),
-    queryBuilder.getMeta(),
-  ]);
-
-  return {
-    data,
-    meta,
-  };
+  return { data };
 };
 
+
 const getSingleTransaction = async (id: string) => {
-  return await Transaction.findById(id).populate("initiatedBy", "name role");
+  return await Transaction.findById(id).populate("initiatedBy", "name role")
 };
 
 export const TransactionService = {

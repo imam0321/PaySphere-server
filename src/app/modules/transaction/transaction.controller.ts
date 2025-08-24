@@ -25,8 +25,7 @@ const getMyTransactionHistory = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const decodedToken = req.user as JwtPayload;
     const result = await TransactionService.getMyTransactionHistory(
-      decodedToken.userId,
-      req.query as Record<string, string>
+      decodedToken.userId
     );
 
     sendResponse(res, {
@@ -34,7 +33,6 @@ const getMyTransactionHistory = catchAsync(
       success: true,
       message: "My all transactions retrieved successfully",
       data: result.data,
-      meta: result.meta,
     });
   }
 );
