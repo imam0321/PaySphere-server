@@ -268,9 +268,7 @@ const getAllTransaction = async (query: Record<string, string>) => {
   };
 };
 
-
-
-const getMyTransactionHistory = async (userId: string,) => {
+const getMyTransactionHistory = async (userId: string, query: Record<string, string>) => {
   const user = await User.findById(userId);
 
   if (!user) {
@@ -281,14 +279,22 @@ const getMyTransactionHistory = async (userId: string,) => {
     throw new AppError(httpStatus.NOT_FOUND, "Transaction Not Found");
   }
 
-  // transactionId gulo ObjectId te convert
-  const transactionObjectIds = user.transactionId.map(id => new mongoose.Types.ObjectId(id));
+  const queryBuilder = new QueryBuilder(
+    Transaction.find({ _id: user.transactionId }),
+    query
+  );
 
-  const data = await Transaction.find({
-    _id: { $in: transactionObjectIds }
-  });
+  const transactions = queryBuilder.filter().sort().paginate();
 
-  return { data };
+  const [data, meta] = await Promise.all([
+    transactions.build(),
+    queryBuilder.getMeta(),
+  ]);
+
+  return {
+    data,
+    meta,
+  };
 };
 
 
