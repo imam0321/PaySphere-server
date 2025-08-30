@@ -42,9 +42,12 @@ export class QueryBuilder<T> {
     return this;
   }
   fields(): this {
-    const fields = this.query.fields?.split(",").join(" ") || "";
-
-    this.modelQuery = this.modelQuery.select(fields);
+    if (this.query.fields) {
+      const fields = this.query.fields.split(",").join(" ");
+      this.modelQuery = this.modelQuery.select(fields);
+    } else {
+      this.modelQuery = this.modelQuery.select("-password");
+    }
 
     return this;
   }

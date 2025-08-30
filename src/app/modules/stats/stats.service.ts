@@ -15,8 +15,6 @@ const getTransactionStats = async (userId: string) => {
     throw new AppError(httpStatus.NOT_FOUND, "Transaction Not Found");
   }
 
-  console.log(user.transactionId, sevenDaysAgo, thirtyDaysAgo)
-
   const [last7Days, last30Days] = await Promise.all([
     Transaction.aggregate([
       { $match: { _id: { $in: user.transactionId }, createdAt: { $gte: sevenDaysAgo } } },
@@ -32,7 +30,8 @@ const getTransactionStats = async (userId: string) => {
             }
           }
         }
-      }
+      },
+      { $project: { _id: 0, totalAmount: 1 } },
     ]),
     Transaction.aggregate([
       { $match: { _id: { $in: user.transactionId }, createdAt: { $gte: thirtyDaysAgo } } },

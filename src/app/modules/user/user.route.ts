@@ -12,7 +12,8 @@ router.post(
   validateRequest(createUserZodSchema),
   UserController.registerUser
 );
-router.get("/", checkAuth(Role.admin), UserController.getAllUser);
+router.get("/", checkAuth(...Object.values(Role)), UserController.getAllUser);
 router.get("/:id", checkAuth(Role.admin), UserController.getSingleUserOrAgent);
+
 
 export const UserRoutes = router;

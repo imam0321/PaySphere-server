@@ -29,7 +29,8 @@ const getAllAgent = catchAsync(
       statusCode: httpStatus.OK,
       success: true,
       message: "All Agent retrieved successfully",
-      data: result,
+      data: result.data,
+      meta: result.meta
     });
   }
 );

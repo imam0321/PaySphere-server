@@ -196,7 +196,7 @@ const cashIn = async (
 
 const cashOut = async (
   userId: string,
-  agentWalletId: string,
+  walletId: string,
   amount: number
 ) => {
   const session = await Wallet.startSession();
@@ -212,7 +212,7 @@ const cashOut = async (
       throw new AppError(httpStatus.FORBIDDEN, "Your wallet is Blocked");
     }
 
-    const agentWallet = await Wallet.findById(agentWalletId).session(session);
+    const agentWallet = await Wallet.findById(walletId).session(session);
     if (!agentWallet)
       throw new AppError(httpStatus.NOT_FOUND, "Agent wallet not found");
 

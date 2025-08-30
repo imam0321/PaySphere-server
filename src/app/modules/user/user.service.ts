@@ -5,14 +5,15 @@ import { User } from "./user.model";
 
 const getAllUser = async (query: Record<string, string>) => {
   const queryBuilder = new QueryBuilder(
-    User.find({ role: Role.user }).select("-password"),
+    User.find({ role: Role.user }),
     query
   );
 
   const users = queryBuilder
-    .search(UserSearchableFields)
-    .sort()
     .filter()
+    .sort()
+    .search(UserSearchableFields)
+    .fields()
     .paginate();
 
   const [data, meta] = await Promise.all([

@@ -52,8 +52,8 @@ const cashIn = catchAsync(
 const cashOut = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { userId } = req.user as JwtPayload;
-    const { agentWalletId, amount } = req.body;
-    const result = await WalletService.cashOut(userId, agentWalletId, amount);
+    const { walletId, amount } = req.body;
+    const result = await WalletService.cashOut(userId, walletId, amount);
 
     sendResponse(res, {
       statusCode: httpStatus.OK,
