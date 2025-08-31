@@ -138,6 +138,58 @@ const credentialLogin = async (payload: Partial<IUser>) => {
   };
 };
 
+const updateUser = async (
+  userId: string,
+  payload: Partial<IUser>,
+  decodedToken: JwtPayload
+) => {
+  if (
+    [Role.admin, Role.agent, Role.user].includes(decodedToken.role as Role) &&
+    userId !== decodedToken.userId
+  ) {
+    throw new AppError(httpStatus.FORBIDDEN, "You are not authorized");
+  }
+
+  const existingUser = await User.findById(userId);
+  if (!existingUser) {
+    throw new AppError(httpStatus.NOT_FOUND, "User not found");
+  }
+
+  if (payload.role) {
+    if (decodedToken.userId === userId) {
+      throw new AppError(
+        httpStatus.FORBIDDEN,
+        "You are not allowed to update your own role"
+      );
+    }
+
+    if ([Role.agent, Role.user].includes(decodedToken.role as Role)) {
+      throw new AppError(
+        httpStatus.FORBIDDEN,
+        "You are not authorized to change roles"
+      );
+    }
+  }
+
+  const restrictedFields = ["isActive", "isDeleted", "isVerified"];
+  if (
+    restrictedFields.some((field) => field in payload) &&
+    [Role.user, Role.agent].includes(decodedToken.role as Role)
+  ) {
+    throw new AppError(
+      httpStatus.FORBIDDEN,
+      "You are not authorized to update these fields"
+    );
+  }
+
+  const updatedUser = await User.findByIdAndUpdate(userId, payload, {
+    new: true,
+    runValidators: true,
+  });
+
+  return updatedUser;
+};
+
 const getMe = async (userId: string) => {
   const myInfo = await User.findById(userId)
     .select("-password")
@@ -189,6 +241,7 @@ const changePassword = async (
 export const AuthService = {
   register,
   credentialLogin,
+  updateUser,
   getMe,
   getNewAccessToken,
   changePassword,

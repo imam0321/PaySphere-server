@@ -6,6 +6,7 @@ import { AuthService } from "./auth.service";
 import httpStatus from "http-status-codes";
 import { JwtPayload } from "jsonwebtoken";
 import AppError from "../../errorHelpers/AppError";
+import { IUser } from "../user/user.interface";
 
 const credentialLogin = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -18,6 +19,27 @@ const credentialLogin = catchAsync(
       success: true,
       message: "User Login Successfully",
       data: loginInfo,
+    });
+  }
+);
+
+const updateUser = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const userId = req.params.id;
+    const payload: IUser = req.body;
+    const verifiedToken = req.user;
+
+    const user = await AuthService.updateUser(
+      userId,
+      payload,
+      verifiedToken as JwtPayload
+    );
+
+    sendResponse(res, {
+      statusCode: httpStatus.CREATED,
+      success: true,
+      message: "User Updated Successfully",
+      data: user,
     });
   }
 );
@@ -105,6 +127,7 @@ const logout = catchAsync(
 
 export const AuthController = {
   credentialLogin,
+  updateUser,
   getMe,
   getNewAccessToken,
   changePassword,

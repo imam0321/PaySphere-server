@@ -139,7 +139,7 @@ const sendMoney = async (
 
 const cashIn = async (
   agentId: string,
-  userWalletId: string,
+  walletId: string,
   amount: number
 ) => {
   const session = await Wallet.startSession();
@@ -158,7 +158,7 @@ const cashIn = async (
       throw new AppError(httpStatus.FORBIDDEN, "Agent not approved");
     }
 
-    const userWallet = await Wallet.findById(userWalletId).session(session);
+    const userWallet = await Wallet.findById(walletId).session(session);
     if (!userWallet)
       throw new AppError(httpStatus.NOT_FOUND, "User wallet not found");
 

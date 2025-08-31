@@ -196,7 +196,7 @@ const cashOut = async (
             amount: amount,
             fee: feeAmount,
             status: TransactionStatus.approved,
-            type: TransactionType.cash_out,
+            type: TransactionType.cash_in,
             currentBalance: userWallet.balance,
             initiatedBy: agentWallet.userId,
           },
@@ -284,7 +284,7 @@ const getMyTransactionHistory = async (userId: string, query: Record<string, str
     query
   );
 
-  const transactions = queryBuilder.filter().sort().paginate();
+  const transactions = queryBuilder.filter().sort().fields().paginate();
 
   const [data, meta] = await Promise.all([
     transactions.build(),
