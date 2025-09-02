@@ -1,1 +1,1 @@
-export const UserSearchableFields = ["name", "phone"]
+export const UserSearchableFields = ["name", "phone", "walletId.status"]

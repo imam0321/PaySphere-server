@@ -5,7 +5,10 @@ import { User } from "./user.model";
 
 const getAllUser = async (query: Record<string, string>) => {
   const queryBuilder = new QueryBuilder(
-    User.find({ role: Role.user }),
+    User.find({ role: Role.user }).populate({
+      path: "walletId",
+      select: "balance status",
+    }),
     query
   );
 

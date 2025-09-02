@@ -45,7 +45,7 @@ const initialFunding = async (
           amount: initialFundingAmount,
           commission: 0,
           status: TransactionStatus.approved,
-          type: TransactionType.cash_out,
+          type: TransactionType.send_money,
           currentBalance: updatedAdminWallet.balance,
           initiatedBy: updatedAdminWallet.userId,
           purpose: "Initial funding to new user",
@@ -253,9 +253,21 @@ const cashOut = async (
 };
 
 const getAllTransaction = async (query: Record<string, string>) => {
-  const queryBuilder = new QueryBuilder(Transaction.find(), query);
+  const queryBuilder = new QueryBuilder(Transaction.find().populate({
+    path: "fromWalletId",
+    populate: {
+      path: "userId",
+      select: "phone",
+    },
+  }).populate({
+    path: "toWalletId",
+    populate: {
+      path: "userId",
+      select: "phone",
+    },
+  }), query);
 
-  const transactions = queryBuilder.filter().paginate();
+  const transactions = queryBuilder.filter().fields().paginate();
 
   const [data, meta] = await Promise.all([
     transactions.build(),
@@ -280,7 +292,21 @@ const getMyTransactionHistory = async (userId: string, query: Record<string, str
   }
 
   const queryBuilder = new QueryBuilder(
-    Transaction.find({ _id: user.transactionId }),
+    Transaction.find({ _id: user.transactionId }).populate({
+      path: "fromWalletId",
+      select: "userId",
+      populate: {
+        path: "userId",
+        select: "phone",
+      },
+    }).populate({
+      path: "toWalletId",
+      select: "userId",
+      populate: {
+        path: "userId",
+        select: "phone",
+      },
+    }),
     query
   );
 

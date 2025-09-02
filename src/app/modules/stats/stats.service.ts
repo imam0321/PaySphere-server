@@ -31,7 +31,6 @@ const getTransactionStats = async (userId: string) => {
           }
         }
       },
-      { $project: { _id: 0, totalAmount: 1 } },
     ]),
     Transaction.aggregate([
       { $match: { _id: { $in: user.transactionId }, createdAt: { $gte: thirtyDaysAgo } } },

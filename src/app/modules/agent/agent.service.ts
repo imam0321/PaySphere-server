@@ -6,7 +6,7 @@ import { User } from "../user/user.model";
 import httpStatus from "http-status-codes";
 
 const getAllAgent = async (query: Record<string, string>) => {
-  const queryBuilder = new QueryBuilder(User.find({role: Role.agent}), query);
+  const queryBuilder = new QueryBuilder(User.find({role: Role.agent}).populate("walletId", "balance status"), query);
   
     const agents = queryBuilder
       .filter()
