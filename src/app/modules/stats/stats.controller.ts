@@ -18,7 +18,21 @@ const getTransactionStats = catchAsync(
   }
 );
 
+const getTransactionSummary = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const result = await StatsService.getTransactionSummary();
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Transaction summary get successfully",
+      data: result,
+    });
+  }
+);
+
 export const StatsController = {
-  getTransactionStats
+  getTransactionStats,
+  getTransactionSummary
 };
 

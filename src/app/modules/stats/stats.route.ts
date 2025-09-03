@@ -6,7 +6,8 @@ import { StatsController } from "./stats.controller";
 const router = Router();
 
 
-router.get("/transaction", checkAuth(...Object.values(Role)), StatsController.getTransactionStats);
+router.get("/transaction-amount", checkAuth(...Object.values(Role)), StatsController.getTransactionStats);
+router.get("/transaction-summary", checkAuth(Role.admin), StatsController.getTransactionSummary);
 
 
 export const StatsRoutes = router;
