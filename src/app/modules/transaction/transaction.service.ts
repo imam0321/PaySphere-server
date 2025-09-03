@@ -255,12 +255,14 @@ const cashOut = async (
 const getAllTransaction = async (query: Record<string, string>) => {
   const queryBuilder = new QueryBuilder(Transaction.find().populate({
     path: "fromWalletId",
+    select: "userId",
     populate: {
       path: "userId",
       select: "phone",
     },
   }).populate({
     path: "toWalletId",
+    select: "userId",
     populate: {
       path: "userId",
       select: "phone",

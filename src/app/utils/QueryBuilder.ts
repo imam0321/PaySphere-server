@@ -13,12 +13,33 @@ export class QueryBuilder<T> {
   filter(): this {
     const filter = { ...this.query };
 
+    const dateRangeFilter: Record<string, unknown> = {};
+    if (filter.startDate) {
+      if (!dateRangeFilter.createdAt) {
+        dateRangeFilter.createdAt = {};
+      }
+      (dateRangeFilter.createdAt as Record<string, unknown>).$gte = new Date(
+        filter.startDate as string
+      );
+      delete filter.startDate;
+    }
+
+    if (filter.endDate) {
+      if (!dateRangeFilter.createdAt) {
+        dateRangeFilter.createdAt = {};
+      }
+      const endDate = new Date(filter.endDate as string);
+      endDate.setHours(23, 59, 59, 999);
+      (dateRangeFilter.createdAt as Record<string, unknown>).$lte = endDate;
+      delete filter.endDate;
+    }
+
     for (const field of excludeField) {
       // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
       delete filter[field];
     }
 
-    this.modelQuery = this.modelQuery.find(filter);
+    this.modelQuery = this.modelQuery.find({ ...filter, ...dateRangeFilter });
 
     return this;
   }
