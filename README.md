@@ -2,6 +2,13 @@
 
 A secure and role-based digital wallet system built with **Node.js**, **Express**, **Typescript**, and **MongoDB**, enabling users to manage their funds and agents to perform cash-in and cash-out operations. The system supports user authentication, wallet transactions, and transaction history tracking with proper validations and Modular MVC architecture.
 
+## 🔗 Live Link
+
+* **Frontend**: [https://paysphere-client.vercel.app]() 
+* **Frontend Repository**: [https://github.com/imam0321/paysphere-client]()
+* **Backend**: [https://pay-sphere-server.vercel.app]()
+---
+
 ## 🚀 Features
 
 - 🧑‍💼 User and Agent Registration/Login
@@ -87,6 +94,14 @@ npm run dev
 | GET    | `/transaction/:id`            | Admin only | Get single transaction          |
 | GET    | `/transaction/my-transaction` | All Roles  | Get transaction history of self |
 
+#### 🔄 Stats
+
+| Method | Endpoint                      | Access     | Description                     |
+| ------ | ----------------------------- | ---------- | ------------------------------- |
+| GET    | `/stats/dashboard-stats`      | Admin only | Get user agent transaction count|
+| GET    | `/stats/transaction-amount`   | Admin only | Get transaction amount 30/7days |
+| GET    | `/stats/transaction-summary`  | Admin only | Get transaction summary         |
+
 ## ✅ Future Improvements
 
 ✅ Transaction status update endpoint
@@ -99,9 +114,7 @@ npm run dev
 
 ✅ Unit & Integration Tests (Jest / Supertest)
 
-## 👤 Author
 
-**Imam Hossain**
+## 📧 Contact
 
-- 💼 [LinkedIn](https://www.linkedin.com/in/imam0321/)
-- 🐙 [GitHub](https://github.com/imam0321)
+* Email: [imam.hossain0321@example.com](mailto:imam0321@example.com)
