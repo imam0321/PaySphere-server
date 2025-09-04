@@ -4,6 +4,20 @@ import { StatsService } from "./stats.service";
 import { sendResponse } from "../../utils/sendResponse";
 import httpStatus from "http-status-codes";
 
+const getDashboardStats = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const decodedToken = req.user;
+    const result = await StatsService.getDashboardStats(decodedToken.userId);
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Dashboard stats get successfully",
+      data: result,
+    });
+  }
+);
+
 const getTransactionStats = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const decodedToken = req.user;
@@ -32,6 +46,7 @@ const getTransactionSummary = catchAsync(
 );
 
 export const StatsController = {
+  getDashboardStats,
   getTransactionStats,
   getTransactionSummary
 };

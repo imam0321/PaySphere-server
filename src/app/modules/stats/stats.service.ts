@@ -5,6 +5,33 @@ import { Transaction } from "../transaction/transaction.model";
 import { User } from "../user/user.model";
 import httpStatus from "http-status-codes";
 
+interface WalletPopulated {
+  _id: string;
+  balance: number;
+}
+
+const getDashboardStats = async (userId: string) => {
+  const user = await User.findById(userId).populate<{ walletId: WalletPopulated }>(
+    "walletId",
+    "balance"
+  );
+
+  const walletBalance = user?.walletId?.balance ?? 0;
+
+  const [totalUsers, totalAgents, totalTransactions] = await Promise.all([
+    User.countDocuments({ role: "user" }),
+    User.countDocuments({ role: "agent" }),
+    Transaction.countDocuments(),
+  ]);
+
+  return {
+    walletBalance,
+    totalUsers,
+    totalAgents,
+    totalTransactions,
+  };
+};
+
 const calculateTotal = async (transactionIds: mongoose.Types.ObjectId[], startDate: Date) => {
   const result = await Transaction.aggregate([
     {
@@ -105,6 +132,7 @@ const getTransactionSummary = async () => {
 
 
 export const StatsService = {
+  getDashboardStats,
   getTransactionStats,
   getTransactionSummary
 };
