@@ -4,9 +4,9 @@ A secure and role-based digital wallet system built with **Node.js**, **Express*
 
 ## 🔗 Live Link
 
-* **Frontend**: [https://paysphere-client.vercel.app]() 
-* **Frontend Repository**: [https://github.com/imam0321/paysphere-client]()
-* **Backend**: [https://pay-sphere-server.vercel.app]()
+* **Frontend**: [https://paysphere-client.vercel.app](https://paysphere-client.vercel.app) 
+* **Frontend Repository**: [https://github.com/imam0321/paysphere-client](https://github.com/imam0321/paysphere-client)
+* **Backend**: [https://pay-sphere-server.vercel.app](https://pay-sphere-server.vercel.app)
 ---
 
 ## 🚀 Features
