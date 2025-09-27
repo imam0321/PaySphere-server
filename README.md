@@ -117,4 +117,4 @@ npm run dev
 
 ## 📧 Contact
 
-* Email: [imam.hossain0321@example.com](mailto:imam0321@example.com)
+* Email: [imam.hossain0321@gmail.com](mailto:imam0321@gmail.com)
